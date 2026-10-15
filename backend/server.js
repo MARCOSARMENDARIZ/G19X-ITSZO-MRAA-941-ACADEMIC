@@ -494,98 +494,217 @@ app.post('/api/chatbot', async (req, res) => {
   if (!mensaje || typeof mensaje !== 'string' || !mensaje.trim()) {
     return res.status(400).json({
       exito: false,
-      mensaje: 'El mensaje es obligatorio y no puede estar vacío'
+      mensaje: 'El mensaje es obligatorio y no puede estar vacío.'
+    });
+  }
+
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+
+  if (!accountId || !apiToken) {
+    console.error('Faltan las credenciales de Cloudflare.');
+
+    return res.status(500).json({
+      exito: false,
+      mensaje: 'La configuración de Cloudflare Workers AI está incompleta.'
     });
   }
 
   try {
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({
-        exito: false,
-        mensaje: 'La API Key de Gemini no está configurada en el servidor'
-      });
-    }
+    const messages = [
+      {
+        role: 'system',
+        content: `Eres el asistente virtual de una plataforma de bienestar organizacional.
 
-    // Formatear el historial garantizando que ningún 'part' quede vacío o undefined
-    const contents = [];
+Tu objetivo es ayudar a los colaboradores y administradores a mejorar su bienestar y ambiente laboral.
 
-    if (historial && Array.isArray(historial)) {
-      historial.forEach(h => {
-        // Extraer texto dependiendo de cómo lo envíe el frontend
-        const textoPart = h.text || h.content || (h.parts && h.parts[0] && h.parts[0].text);
+Puedes ayudar con los siguientes temas:
+- Bienestar laboral y emocional.
+- Clima organizacional.
+- Estrés laboral.
+- Comunicación entre compañeros.
+- Satisfacción de los colaboradores.
+- Encuestas de bienestar.
+- Propuestas de mejora.
+- Resolución de conflictos laborales.
+- Equilibrio entre trabajo y vida personal.
+- Recomendaciones para mejorar la organización.
 
-        // Solo agregar al historial si contiene texto válido
-        if (textoPart && typeof textoPart === 'string' && textoPart.trim() !== '') {
-          contents.push({
-            role: h.role === 'user' ? 'user' : 'model',
-            parts: [{ text: textoPart.trim() }]
-          });
+INSTRUCCIONES:
+1. Responde siempre en español.
+2. Sé amable, respetuoso y profesional.
+3. Explica las cosas de manera sencilla y clara.
+4. Mantén el contexto de la conversación utilizando el historial.
+5. No inventes estadísticas ni información de la empresa.
+6. No afirmes que has consultado encuestas o bases de datos si no se te proporcionaron esos datos.
+7. Cuando te soliciten recomendaciones, proporciona acciones concretas y realistas.
+8. Si no tienes suficiente información, solicita los datos necesarios.
+9. Evita respuestas innecesariamente largas.
+10. Puedes responder preguntas generales y orientar la conversación hacia el bienestar organizacional.`
+      }
+    ];
+
+    // Procesar el historial de la conversación
+    if (Array.isArray(historial)) {
+      historial.slice(-10).forEach(h => {
+        if (!h || typeof h !== 'object') {
+          return;
         }
+
+        const texto =
+          h.text ||
+          h.content ||
+          (Array.isArray(h.parts) && h.parts[0]
+            ? h.parts[0].text
+            : '');
+
+        if (typeof texto !== 'string' || !texto.trim()) {
+          return;
+        }
+
+        let rol;
+
+        if (h.role === 'user') {
+          rol = 'user';
+        } else if (
+          h.role === 'model' ||
+          h.role === 'assistant'
+        ) {
+          rol = 'assistant';
+        } else {
+          return;
+        }
+
+        messages.push({
+          role: rol,
+          content: texto.trim()
+        });
       });
     }
 
     // Agregar el mensaje actual del usuario
-    contents.push({
+    messages.push({
       role: 'user',
-      parts: [{ text: mensaje.trim() }]
+      content: mensaje.trim()
     });
 
-    // Llamada al modelo Gemini 2.5 Flash utilizando el SDK @google/genai
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: contents,
-      config: {
-        systemInstruction: 'Eres un asistente virtual servicial y amable integrado en la plataforma de bienestar.',
-        temperature: 0.7
+    // Solicitar respuesta a Cloudflare Workers AI
+    const respuestaCloudflare = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messages: messages,
+          max_tokens: 1000,
+          temperature: 0.7
+        })
       }
-    });
+    );
 
-    const respuestaIA = response.text;
+    // Obtener la respuesta de Cloudflare
+    const datosCloudflare = await respuestaCloudflare.json();
 
-    res.json({
+    // Comprobar si Cloudflare devolvió un error
+    if (
+      !respuestaCloudflare.ok ||
+      !datosCloudflare.success
+    ) {
+      console.error(
+        'Error de Cloudflare Workers AI:',
+        datosCloudflare.errors || datosCloudflare
+      );
+
+      return res.status(502).json({
+        exito: false,
+        mensaje: 'No se pudo generar una respuesta. Inténtalo nuevamente.'
+      });
+    }
+
+    // Obtener el texto generado por la IA
+    const respuestaIA = datosCloudflare.result?.response;
+
+    if (
+      typeof respuestaIA !== 'string' ||
+      !respuestaIA.trim()
+    ) {
+      console.error(
+        'Cloudflare no devolvió una respuesta válida:',
+        datosCloudflare
+      );
+
+      return res.status(502).json({
+        exito: false,
+        mensaje: 'La inteligencia artificial no devolvió una respuesta válida.'
+      });
+    }
+
+    // Enviar la respuesta al frontend React
+    return res.json({
       exito: true,
-      respuesta: respuestaIA
+      respuesta: respuestaIA.trim()
     });
+
   } catch (error) {
-    console.error('Error en el endpoint del chatbot con Gemini:', error);
-    res.status(500).json({
+    console.error(
+      'Error en el chatbot con Cloudflare:',
+      error
+    );
+
+    return res.status(500).json({
       exito: false,
-      mensaje: 'Error interno del servidor al procesar el mensaje con Gemini'
+      mensaje: 'Error interno del servidor al procesar el mensaje.'
     });
   }
 });
-
 // =========================================================================
 // ENDPOINT PARA ANALIZAR RESULTADOS DE ENCUESTA CON GEMINI IA (ADMIN)
 // =========================================================================
+
+
 app.get('/api/encuestas/:id/analizar-ia', async (req, res) => {
   const { id } = req.params;
 
   try {
     // 1. Obtener la encuesta
-    const encuestaQuery = await pool.query('SELECT * FROM encuestas WHERE id = $1', [id]);
-    if (encuestaQuery.rows.length === 0) {
-      return res.status(404).json({ exito: false, mensaje: 'Encuesta no encontrada' });
-    }
-    const encuesta = encuestaQuery.rows[0];
-
-    // 2. Obtener preguntas de la tabla 'preguntas'
-    const preguntasQuery = await pool.query(
-      'SELECT id, texto_pregunta, tipo_respuesta FROM preguntas WHERE encuesta_id = $1',
+    const encuestaQuery = await pool.query(
+      'SELECT * FROM encuestas WHERE id = $1',
       [id]
     );
 
-    // 3. Obtener respuestas reales uniendo 'respuestas_encuesta' y 'detalle_respuestas'
+    if (encuestaQuery.rows.length === 0) {
+      return res.status(404).json({
+        exito: false,
+        mensaje: 'Encuesta no encontrada'
+      });
+    }
+
+    const encuesta = encuestaQuery.rows[0];
+
+    // 2. Obtener las preguntas
+    const preguntasQuery = await pool.query(
+      `SELECT id, texto_pregunta, tipo_respuesta
+       FROM preguntas
+       WHERE encuesta_id = $1`,
+      [id]
+    );
+
+    // 3. Obtener las respuestas registradas
     const respuestasQuery = await pool.query(
-      `SELECT 
-         dr.pregunta_id, 
-         dr.valor_numero, 
-         dr.valor_texto, 
-         dr.opcion_id, 
+      `SELECT
+         dr.pregunta_id,
+         dr.valor_numero,
+         dr.valor_texto,
+         dr.opcion_id,
          op.texto_opcion
        FROM respuestas_encuesta re
-       JOIN detalle_respuestas dr ON re.id = dr.respuesta_encuesta_id
-       LEFT JOIN opciones_pregunta op ON dr.opcion_id = op.id
+       JOIN detalle_respuestas dr
+         ON re.id = dr.respuesta_encuesta_id
+       LEFT JOIN opciones_pregunta op
+         ON dr.opcion_id = op.id
        WHERE re.encuesta_id = $1`,
       [id]
     );
@@ -593,11 +712,11 @@ app.get('/api/encuestas/:id/analizar-ia', async (req, res) => {
     if (respuestasQuery.rows.length < 3) {
       return res.status(400).json({
         exito: false,
-        mensaje: 'Aún no hay respuestas registradas para esta encuesta.'
+        mensaje: 'Aún no hay suficientes respuestas registradas para esta encuesta.'
       });
     }
 
-    // 4. Estructurar la información para procesar con Gemini
+    // 4. Preparar los datos de la encuesta
     const datosProcesados = {
       titulo: encuesta.titulo,
       descripcion: encuesta.descripcion,
@@ -615,123 +734,361 @@ app.get('/api/encuestas/:id/analizar-ia', async (req, res) => {
       }))
     };
 
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({ exito: false, mensaje: 'Falta la GEMINI_API_KEY en el backend' });
+    // 5. Validar las credenciales de Cloudflare
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+
+    if (!accountId || !apiToken) {
+      return res.status(500).json({
+        exito: false,
+        mensaje: 'Faltan las variables CLOUDFLARE_ACCOUNT_ID o CLOUDFLARE_API_TOKEN en el archivo .env.'
+      });
     }
 
-    // 5. Prompt optimizado
+    // 6. Crear el prompt
     const prompt = `
-      Eres un experto analista corporativo y de clima organizacional.
-      Analiza la siguiente información de la encuesta "${datosProcesados.titulo}":
+Analiza los resultados de esta encuesta de bienestar organizacional.
 
-      ${JSON.stringify(datosProcesados)}
+Datos de la encuesta:
+${JSON.stringify(datosProcesados)}
 
-      INSTRUCCIONES DE RESPUESTA:
-      Responde ÚNICAMENTE con un objeto JSON válido y estrictamente en español con esta estructura exacta:
+Genera un análisis profesional, objetivo y útil para una organización.
+Utiliza exclusivamente los datos proporcionados. No inventes resultados.
+
+La puntuación promedio debe calcularse únicamente con las respuestas
+numéricas disponibles y compatibles con una escala de calificación.
+Si no se puede calcular, utiliza "N/A".
+
+El sentimiento predominante debe ser "Positivo", "Neutro" o "Negativo",
+según las respuestas disponibles.
+
+Devuelve el resultado en español con los campos solicitados.
+`;
+
+    // 7. Solicitar el análisis a Cloudflare Workers AI
+    const respuestaCloudflare = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
       {
-        "resumen_ejecutivo": "Un texto explicativo claro y sintético del estado general en 2 o 3 oraciones.",
-        "sentimiento_predominante": "Positivo, Neutro o Negativo",
-        "puntuacion_promedio": "Ejemplo '4.2 / 5' o 'N/A' según las respuestas",
-        "hallazgos_clave": [
-          "Punto fuerte o hallazgo principal 1",
-          "Punto fuerte o hallazgo principal 2"
-        ],
-        "areas_criticas": [
-          "Área de oportunidad o problema detectado 1",
-          "Área de oportunidad o problema detectado 2"
-        ],
-        "plan_de_accion": [
-          "Recomendación práctica 1",
-          "Recomendación práctica 2"
-        ]
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content: `Eres un analista experto en bienestar organizacional.
+Devuelve únicamente un objeto JSON válido, sin Markdown ni explicaciones adicionales.
+La estructura debe ser:
+{
+  "resumen_ejecutivo": "texto",
+  "sentimiento_predominante": "Positivo, Neutro o Negativo",
+  "puntuacion_promedio": "valor o N/A",
+  "hallazgos_clave": ["texto"],
+  "areas_criticas": ["texto"],
+  "plan_de_accion": ["texto"]
+}`
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              type: 'object',
+              properties: {
+                resumen_ejecutivo: {
+                  type: 'string'
+                },
+                sentimiento_predominante: {
+                  type: 'string',
+                  enum: ['Positivo', 'Neutro', 'Negativo']
+                },
+                puntuacion_promedio: {
+                  type: 'string'
+                },
+                hallazgos_clave: {
+                  type: 'array',
+                  items: {
+                    type: 'string'
+                  }
+                },
+                areas_criticas: {
+                  type: 'array',
+                  items: {
+                    type: 'string'
+                  }
+                },
+                plan_de_accion: {
+                  type: 'array',
+                  items: {
+                    type: 'string'
+                  }
+                }
+              },
+              required: [
+                'resumen_ejecutivo',
+                'sentimiento_predominante',
+                'puntuacion_promedio',
+                'hallazgos_clave',
+                'areas_criticas',
+                'plan_de_accion'
+              ]
+            }
+          },
+          max_tokens: 1500,
+          temperature: 0.1
+        })
       }
-    `;
+    );
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.8-flash",
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.3
+    // 8. Leer la respuesta de Cloudflare
+    const datosCloudflare = await respuestaCloudflare.json();
+
+    if (!respuestaCloudflare.ok || !datosCloudflare.success) {
+      console.error(
+        'Error de Cloudflare Workers AI:',
+        datosCloudflare.errors || respuestaCloudflare.status
+      );
+
+      return res.status(502).json({
+        exito: false,
+        mensaje: 'Cloudflare no pudo generar el análisis. Revisa los errores del backend.'
+      });
+    }
+
+    // 9. Obtener el texto generado
+    const textoIA = datosCloudflare.result?.response;
+
+    if (!textoIA) {
+      console.error(
+        'Cloudflare no devolvió texto:',
+        datosCloudflare
+      );
+
+      return res.status(502).json({
+        exito: false,
+        mensaje: 'Cloudflare devolvió una respuesta vacía.'
+      });
+    }
+
+    // 10. Convertir la respuesta a JSON
+    let analisisJSON;
+
+    try {
+      let textoLimpio = typeof textoIA === 'string'
+        ? textoIA.trim()
+        : textoIA;
+
+      if (typeof textoLimpio === 'string') {
+        textoLimpio = textoLimpio
+          .replace(/^```json\s*/i, '')
+          .replace(/^```\s*/i, '')
+          .replace(/\s*```$/i, '')
+          .trim();
+
+        try {
+          analisisJSON = JSON.parse(textoLimpio);
+        } catch {
+          const inicio = textoLimpio.indexOf('{');
+          const final = textoLimpio.lastIndexOf('}');
+
+          if (inicio === -1 || final <= inicio) {
+            throw new Error('No se encontró un objeto JSON completo.');
+          }
+
+          analisisJSON = JSON.parse(
+            textoLimpio.substring(inicio, final + 1)
+          );
+        }
+      } else if (
+        textoLimpio &&
+        typeof textoLimpio === 'object'
+      ) {
+        analisisJSON = textoLimpio;
+      } else {
+        throw new Error('La respuesta no contiene un objeto JSON.');
       }
-    });
 
-    const analisisJSON = JSON.parse(response.text);
+      // 11. Validar la estructura del análisis
+      const camposRequeridos = [
+        'resumen_ejecutivo',
+        'sentimiento_predominante',
+        'puntuacion_promedio',
+        'hallazgos_clave',
+        'areas_criticas',
+        'plan_de_accion'
+      ];
 
-    res.json({
+      const faltantes = camposRequeridos.filter(
+        campo => !Object.prototype.hasOwnProperty.call(
+          analisisJSON,
+          campo
+        )
+      );
+
+      if (faltantes.length > 0) {
+        throw new Error(
+          `Faltan campos: ${faltantes.join(', ')}`
+        );
+      }
+
+      if (
+        !Array.isArray(analisisJSON.hallazgos_clave) ||
+        !Array.isArray(analisisJSON.areas_criticas) ||
+        !Array.isArray(analisisJSON.plan_de_accion)
+      ) {
+        throw new Error('Los hallazgos, áreas críticas y plan de acción deben ser arreglos.');
+      }
+
+    } catch (error) {
+      console.error(
+        'Error al interpretar la respuesta de Cloudflare:',
+        error.message
+      );
+
+      console.error(
+        'Respuesta original de la IA:',
+        textoIA
+      );
+
+      return res.status(502).json({
+        exito: false,
+        mensaje: 'La IA devolvió una respuesta incompleta o con formato inválido. Revisa la terminal del backend.'
+      });
+    }
+
+    // 12. Enviar el análisis al frontend
+    return res.json({
       exito: true,
       analisis: analisisJSON
     });
 
   } catch (error) {
-    console.error('Error al generar el análisis con Gemini:', error);
-    res.status(500).json({
+    console.error(
+      'Error al analizar la encuesta con Cloudflare:',
+      error
+    );
+
+    return res.status(500).json({
       exito: false,
-      mensaje: 'Error interno al procesar el análisis con la IA'
+      mensaje: 'Error interno al procesar el análisis de la encuesta.'
     });
   }
 });
 
+
+
 // =========================================================================
 // ENDPOINT PARA ANALIZAR LA VIABILIDAD DE UNA PROPUESTA CON GEMINI IA
 // =========================================================================
+
 app.post('/api/analizar-viabilidad', async (req, res) => {
   const { titulo, descripcion } = req.body;
 
-  if (!titulo && !descripcion) {
+  if ((!titulo || !titulo.trim()) && (!descripcion || !descripcion.trim())) {
     return res.status(400).json({
       exito: false,
       mensaje: 'Se requiere un título o descripción para analizar la propuesta.'
     });
   }
 
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+
+  if (!accountId || !apiToken) {
+    return res.status(500).json({
+      exito: false,
+      mensaje: 'Faltan las credenciales de Cloudflare Workers AI en el archivo .env.'
+    });
+  }
+
   try {
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({
+    const prompt = `
+Eres un consultor experto en proyectos y bienestar organizacional.
+
+Evalúa la siguiente propuesta de mejora presentada por un colaborador.
+
+Título: ${titulo || 'Sin título'}
+Descripción: ${descripcion || 'Sin descripción'}
+
+Analiza:
+1. Viabilidad general.
+2. Beneficios para los colaboradores y la organización.
+3. Riesgos y dificultades.
+4. Recursos necesarios.
+5. Recomendaciones para implementarla.
+6. Información adicional que haría falta para evaluar mejor la propuesta.
+
+Distingue los datos proporcionados de las suposiciones.
+No inventes presupuestos, estadísticas ni información que no se haya proporcionado.
+La evaluación es orientativa y no sustituye un estudio técnico o financiero.
+
+Responde en español, de forma clara y profesional.
+`;
+
+    const respuesta = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content: 'Evalúa propuestas organizacionales con objetividad. No afirmes que una propuesta es viable sin considerar sus limitaciones.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: 1000,
+          temperature: 0.3
+        })
+      }
+    );
+
+    const datos = await respuesta.json();
+
+    if (!respuesta.ok || !datos.success) {
+      console.error('Error de Cloudflare Workers AI:', datos.errors || datos);
+      return res.status(502).json({
         exito: false,
-        mensaje: 'La API Key de Gemini no está configurada en el servidor'
+        mensaje: 'No se pudo generar el análisis con Cloudflare Workers AI. Verifica el modelo, los permisos del token y los límites de uso.'
       });
     }
 
-    const prompt = `
-      Eres un experto consultor de proyectos y analista de viabilidad corporativa.
-      Analiza la siguiente propuesta de mejora o idea de negocio enviada por un colaborador:
+    const resumenIA = datos.result?.response;
 
-      Título: "${titulo || 'Sin título'}"
-      Descripción: "${descripcion || 'Sin descripción'}"
+    if (!resumenIA) {
+      return res.status(502).json({
+        exito: false,
+        mensaje: 'La IA no devolvió un análisis. Inténtalo nuevamente.'
+      });
+    }
 
-      Por favor, proporciona un análisis de viabilidad profesional y constructivo que incluya:
-      1. Resumen general de la viabilidad.
-      2. Puntos fuertes o beneficios potenciales.
-      3. Posibles riesgos o áreas de atención.
-      4. Recomendación o siguiente paso sugerido.
-
-      Redacta la respuesta en un tono profesional, claro, fluido y directamente en español. No uses bloques JSON estrictos, preséntalo formateado de manera limpia con párrafos o viñetas cortas.
-    `;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3.8-flash", // O el modelo que estés utilizando en tu configuración
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      config: {
-        temperature: 0.5
-      }
-    });
-
-    const resumenIA = response.text;
-
-    res.json({
+    return res.json({
       exito: true,
       resumen: resumenIA
     });
 
   } catch (error) {
-    console.error('Error al generar el análisis de viabilidad con Gemini:', error);
-    res.status(500).json({
+    console.error('Error al analizar la viabilidad con Cloudflare:', error.message);
+
+    return res.status(500).json({
       exito: false,
-      mensaje: 'Error interno al procesar el análisis de viabilidad con la IA'
+      mensaje: 'Ocurrió un error al procesar el análisis de viabilidad.'
     });
   }
 });
+
 
 // Arrancar el servidor AL FINAL de las rutas
 const PORT = process.env.PORT || 5000;

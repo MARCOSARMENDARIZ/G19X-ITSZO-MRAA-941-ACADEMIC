@@ -25,18 +25,22 @@ function Inicio() {
         <nav className="sidebar-menu">
 
           <a href="#" className="menu-item active">
-            📊 Tablero
+            <i class="bi bi-bar-chart-steps"></i> 
+            <span>Tablero</span>
           </a>
           <Link to="/chat" className="menu-item">
-            Chat de ayuda
+           <i class="bi bi-chat-left-dots-fill" style={{ color: '#1ED760'}}></i> 
+           <span>Chat de ayuda</span>
           </Link>
 
           <Link to="/bienestar" className="menu-item">
-            ❤️ Bienestar
+          <i className="bi bi-heart-pulse-fill" style={{ color: '#DE0011' }}></i>
+           <span> Bienestar </span>
           </Link>
 
           <Link to="/evaluaciones" className="menu-item">
-            📋 Evaluaciones
+            <i class="bi bi-card-checklist" style={{ color: '#7740ff '}}></i> 
+            <span>Evaluaciones</span> 
           </Link>
 
           <Link to="/perfil" className="menu-item">
@@ -54,7 +58,8 @@ function Inicio() {
           )}
 
           <a href="/" className="menu-item logout">
-            🚪 Cerrar sesión
+           <i class="bi bi-door-closed-fill" style={{color: '#DE0011'}}></i> 
+           <span>Cerrar sesión</span>
           </a>
 
         </div>
@@ -125,7 +130,7 @@ function Inicio() {
 
           {/* ACTIVIDAD Y ALERTAS RECIENTES */}
           <section className="dashboard-card">
-            <h3>🔔 Actividad y Novedades</h3>
+            <h3><i class="bi bi-bell-fill" style={{color: '#FDD55B'}}></i> Actividad y Novedades</h3>
             <p className="card-description">Eventos recientes en la plataforma</p>
 
             <ul className="activity-list">

@@ -359,132 +359,145 @@ main > div p {
   color: #6b7280;
 }
 
-
-/* =========================================================
-   PERFIL
-   ========================================================= */
+/* PERFIL */
 
 .perfil-container {
   min-height: 100vh;
-  background: #f5f6fa;
-  padding: 40px;
+  background: #ffffff;
+  padding: 28px 30px;
+  box-sizing: border-box;
+  color: #1e293b;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+/* ENCABEZADO */
+
+.perfil-header {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(115deg, #1647a5, #0c2865);
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  padding: 32px 36px;
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  margin-bottom: 24px;
+  min-height: 155px;
   box-sizing: border-box;
 }
 
-
-/* =========================================================
-   ENCABEZADO DEL PERFIL
-   ========================================================= */
-
-.perfil-header {
-  background: white;
-  border-radius: 16px;
-  padding: 30px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
-  margin-bottom: 25px;
-}
-
-
-/* =========================================================
-   FOTO DEL PERFIL
-   ========================================================= */
+/* FOTO DEL PERFIL */
 
 .perfil-foto {
-  width: 90px;
-  height: 90px;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 125px;
+  height: 125px;
   border-radius: 50%;
-  background: #e9ecf5;
+  background: linear-gradient(145deg, #1475ff, #163c9c);
+  border: 5px solid #60a5fa;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 45px;
+  font-size: 55px;
+  color: #ffffff;
+  box-shadow: 0 0 0 5px rgba(49, 132, 255, 0.1);
+  overflow: hidden;
 }
 
-
-/* =========================================================
-   TÍTULO DEL PERFIL
-   ========================================================= */
+/* TÍTULO */
 
 .perfil-titulo {
   flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .perfil-titulo h1 {
   margin: 0;
-  font-size: 28px;
-  color: #222;
+  font-size: clamp(22px, 2vw, 30px);
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.5px;
 }
 
 .perfil-titulo p {
-  margin: 6px 0 0;
-  color: #777;
+  margin: 10px 0 0;
+  color: #dbeafe;
   font-size: 16px;
+  line-height: 1.6;
 }
 
-
-/* =========================================================
-   BOTÓN EDITAR PERFIL
-   ========================================================= */
+/* BOTÓN EDITAR */
 
 .btn-editar {
-  border: none;
-  background: #4f46e5;
-  color: white;
-  padding: 12px 22px;
-  border-radius: 8px;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  border: 1px solid #60a5fa;
+  background: transparent;
+  color: #ffffff;
+  padding: 13px 22px;
+  border-radius: 9px;
   font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: 0.2s;
+  transition: all 0.25s ease;
 }
 
 .btn-editar:hover {
-  background: #3730a3;
+  background: #2563eb;
+  border-color: #93c5fd;
+  transform: translateY(-2px);
 }
 
-
-/* =========================================================
-   CONTENIDO DEL PERFIL
-   ========================================================= */
+/* CONTENIDO */
 
 .perfil-contenido {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 25px;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.9fr);
+  align-items: start;
+  gap: 22px;
 }
 
-
-/* =========================================================
-   TARJETAS DEL PERFIL
-   ========================================================= */
+/* TARJETAS BLANCAS */
 
 .perfil-card {
-  background: white;
-  padding: 25px;
-  border-radius: 16px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+  min-width: 0;
+  background: #ffffff;
+  padding: 27px;
+  border: 1px solid #e2e8f0;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
+  box-sizing: border-box;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.perfil-card:hover {
+  border-color: #bfdbfe;
+  box-shadow: 0 7px 22px rgba(15, 23, 42, 0.08);
 }
 
 .perfil-card h2 {
   margin-top: 0;
-  margin-bottom: 25px;
+  margin-bottom: 22px;
   font-size: 20px;
-  color: #222;
+  font-weight: 650;
+  color: #1e293b;
 }
 
-
-/* =========================================================
-   DATOS DEL PERFIL
-   ========================================================= */
+/* DATOS */
 
 .dato {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 15px 0;
-  border-bottom: 1px solid #eee;
+  gap: 6px;
+  padding: 14px 0;
+  border-bottom: 1px solid #edf0f5;
 }
 
 .dato:last-child {
@@ -492,34 +505,113 @@ main > div p {
 }
 
 .dato span {
-  font-size: 13px;
-  color: #888;
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.5;
 }
 
 .dato strong {
   font-size: 15px;
-  color: #333;
+  font-weight: 500;
+  color: #334155;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
+/* ENLACES */
 
-/* =========================================================
-   RESPONSIVE DEL PERFIL
-   ========================================================= */
+.perfil-card a {
+  color: #2563eb;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
 
-@media (max-width: 800px) {
+.perfil-card a:hover {
+  color: #1d4ed8;
+}
+
+/* CAMPOS DE FORMULARIO */
+
+.perfil-card input,
+.perfil-card textarea,
+.perfil-card select {
+  width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: #1e293b;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.perfil-card input:focus,
+.perfil-card textarea:focus,
+.perfil-card select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.perfil-card input::placeholder,
+.perfil-card textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1000px) {
+  .perfil-container {
+    padding: 22px;
+  }
+
   .perfil-contenido {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .perfil-container {
+    padding: 14px;
   }
 
   .perfil-header {
     flex-direction: column;
     text-align: center;
+    padding: 25px 20px;
+    gap: 16px;
+  }
+
+  .perfil-foto {
+    width: 105px;
+    height: 105px;
+    font-size: 45px;
+  }
+
+  .perfil-titulo h1 {
+    font-size: 23px;
+    overflow-wrap: anywhere;
+  }
+
+  .perfil-titulo p {
+    font-size: 14px;
   }
 
   .btn-editar {
     width: 100%;
   }
+
+  .perfil-card {
+    padding: 20px;
+  }
+
+  .perfil-card h2 {
+    font-size: 18px;
+  }
 }
+
 
 
 /* =========================================================
@@ -1953,4 +2045,238 @@ form button:active {
 
 .btn-analizar:hover {
   background: #4338ca;
+}
+
+.chat-layout {
+  display: flex;
+  width: 100%;
+  min-height: 600px;
+  height: calc(100vh - 100px);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  color: #1f2937;
+}
+
+.chat-sidebar {
+  width: 270px;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  border-right: 1px solid #e5e7eb;
+  padding: 20px 12px;
+}
+
+.chat-sidebar h3 {
+  font-size: 17px;
+  margin: 0 0 18px;
+  padding: 0 8px;
+}
+
+.nuevo-chat-btn {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 18px;
+  border: 1px solid #dedede;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #dc0011;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nuevo-chat-btn:hover {
+  background: #fff1f2;
+}
+
+.historial-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.historial-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 9px;
+}
+
+.historial-item:hover,
+.historial-activo {
+  background: #eceff3;
+}
+
+.historial-seleccionar {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 9px 6px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: #374151;
+}
+
+.historial-titulo {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.historial-seleccionar small {
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.eliminar-chat-btn {
+  border: none;
+  background: transparent;
+  padding: 7px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.eliminar-chat-btn:hover {
+  background: #fee2e2;
+}
+
+.chat-container {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+}
+
+.chat-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.chat-header h3 {
+  margin: 0 0 5px;
+  font-size: 19px;
+}
+
+.chat-header span {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.chat-box {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mensaje {
+  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.mensaje-usuario {
+  align-self: flex-end;
+  background: #dc0011;
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+
+.mensaje-bot {
+  align-self: flex-start;
+  background: #f1f5f9;
+  color: #1f2937;
+  border-bottom-left-radius: 4px;
+}
+
+.chat-input-form {
+  display: flex;
+  gap: 10px;
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.chat-input-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+  outline: none;
+}
+
+.chat-input-form input:focus {
+  border-color: #dc0011;
+}
+
+.chat-input-form button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 9px;
+  background: #dc0011;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-input-form button:disabled,
+.nuevo-chat-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 650px) {
+  .chat-layout {
+    height: calc(100vh - 80px);
+    min-height: 500px;
+  }
+
+  .chat-sidebar {
+    width: 145px;
+    min-width: 145px;
+    padding: 12px 6px;
+  }
+
+  .chat-sidebar h3 {
+    font-size: 14px;
+  }
+
+  .historial-titulo {
+    font-size: 12px;
+  }
+
+  .chat-box {
+    padding: 14px 10px;
+  }
+
+  .mensaje {
+    max-width: 95%;
+  }
+
+  .chat-input-form {
+    padding: 10px;
+  }
+
+  .chat-input-form button {
+    padding: 10px;
+  }
 }

@@ -41,10 +41,10 @@ function Perfil() {
   return (
     <div className="perfil-container"> 
       <div className="perfil-header">
-        <Link to="/inicio" className="menu-item">
-          ←
+        <Link to="/inicio" className="menu-item5">
+         <i class="bi bi-arrow-left"></i>
         </Link>
-        <div className="perfil-foto"> 👤 </div> 
+        <div className="perfil-foto"> <i class="bi bi-person-fill"></i> </div> 
         <div className="perfil-titulo"> 
           <h1>{perfil ? perfil.nombre : "Usuario"}</h1> 
           <p>{perfil ? (perfil.puesto || perfil.rol) : "Colaborador"}</p>
