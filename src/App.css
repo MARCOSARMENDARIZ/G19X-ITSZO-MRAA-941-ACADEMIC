@@ -1105,61 +1105,121 @@ main > div p {
 }
 
 
-/* =========================================================
-   PREGUNTAS DE ENCUESTA
-   ========================================================= */
 
-.pregunta-box {
-  background-color: #f8fafc;
-  padding: 1.25rem;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 1rem;
+/* CONTENEDOR DEL MODAL */
+.modal-encuesta {
+  width: 100%;
+  max-width: 700px;
+  box-sizing: border-box;
 }
 
+/* DESCRIPCIÓN ARRIBA */
+.encuesta-descripcion {
+  width: 100%;
+  margin-bottom: 24px;
+  color: #64748b;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+/* CONTENEDOR DE TODAS LAS PREGUNTAS */
+.preguntas-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 20px;
+  box-sizing: border-box;
+}
+
+/* CADA PREGUNTA OCUPA TODO EL ANCHO */
+.pregunta-box {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 0;
+  padding: 16px 0;
+  margin: 0;
+}
+
+/* TÍTULO DE LA PREGUNTA */
 .pregunta-titulo {
+  display: block;
+  width: 100%;
+  margin-bottom: 12px;
   font-size: 0.925rem;
   font-weight: 700;
   color: #1e293b;
-  display: block;
-  margin-bottom: 0.75rem;
 }
 
-
-/* =========================================================
-   OPCIONES DE CALIFICACIÓN
-   ========================================================= */
-
+/* CALIFICACIONES */
 .rating-options {
   display: flex;
-  gap: 0.5rem;
+  width: 100%;
+  gap: 8px;
 }
 
 .btn-rating {
   flex: 1;
-  background-color: #ffffff;
-  border: 1px solid #cbd5e1;
-  padding: 0.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.85rem;
+}
+
+/* COMENTARIOS */
+.pregunta-box textarea {
+  display: block;
+  width: 100%;
+  min-height: 100px;
+  box-sizing: border-box;
+}
+
+/* EVITAR QUE LAS PREGUNTAS SE ACOMODEN EN DOS COLUMNAS */
+.preguntas-container > * {
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+
+.encuesta-temporizador {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin: 14px 0;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  color: #1d4ed8;
+}
+
+.encuesta-temporizador strong {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.encuesta-temporizador p {
+  margin: 4px 0;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: #475569;
-  transition: all 0.2s ease;
+  font-variant-numeric: tabular-nums;
 }
 
-.btn-rating:hover {
-  border-color: #2563eb;
-  color: #2563eb;
-  background-color: #eff6ff;
+.encuesta-temporizador small {
+  font-size: 0.78rem;
 }
 
-.btn-rating.activo {
-  background-color: #2563eb;
-  border-color: #2563eb;
-  color: #ffffff;
-  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+.encuesta-temporizador.vencido {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
 }
+
+.status-pill.vencida {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
 
 
 /* =========================================================

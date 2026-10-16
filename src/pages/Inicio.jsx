@@ -25,7 +25,7 @@ function Inicio() {
         <nav className="sidebar-menu">
 
           <a href="#" className="menu-item active">
-            <i class="bi bi-bar-chart-steps"></i> 
+            <i class="bi bi-house-fill"></i>
             <span>Tablero</span>
           </a>
           <Link to="/chat" className="menu-item">

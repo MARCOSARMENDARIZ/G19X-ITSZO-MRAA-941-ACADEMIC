@@ -1,98 +1,196 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 
 function Encuestas({ usuario }) {
-  // Estados para encuestas y carga
   const [encuestas, setEncuestas] = useState([]);
   const [cargando, setCargando] = useState(true);
 
-  // Estados de modales
   const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
   const [mostrarModalResponder, setMostrarModalResponder] = useState(false);
   const [mostrarModalResultados, setMostrarModalResultados] = useState(false);
 
-  // Estado para el Análisis de IA y Carga
   const [analisisIA, setAnalisisIA] = useState(null);
   const [cargandoAnalisis, setCargandoAnalisis] = useState(false);
 
-  // Estado para la encuesta activa
   const [encuestaSeleccionada, setEncuestaSeleccionada] = useState(null);
   const [preguntasEncuesta, setPreguntasEncuesta] = useState([]);
   const [respuestasForm, setRespuestasForm] = useState({});
 
-  // Estado para el formulario de nueva encuesta (Admin)
   const [nuevoTitulo, setNuevoTitulo] = useState("");
   const [nuevaDescripcion, setNuevaDescripcion] = useState("");
+  const [fechaCierre, setFechaCierre] = useState("");
+
   const [nuevasPreguntas, setNuevasPreguntas] = useState([
     { texto_pregunta: "", tipo_respuesta: "escala", opciones: ["", ""] }
   ]);
 
-  // Usuario y Permisos
-  const usuarioActual = usuario || JSON.parse(localStorage.getItem("usuario") || "{}");
+  const [relojActual, setRelojActual] = useState(Date.now());
+  const [enviandoRespuestas, setEnviandoRespuestas] = useState(false);
+  const [guardandoEncuesta, setGuardandoEncuesta] = useState(false);
+
+  const usuarioActual =
+    usuario || JSON.parse(localStorage.getItem("usuario") || "{}");
+
   const esAdmin = usuarioActual?.rol === "admin";
 
   const backendHost = window.location.hostname;
   const API_URL = `http://${backendHost}:5000/api/encuestas`;
 
-  // 1. Obtener encuestas desde el Backend
-  const cargarEncuestas = async () => {
+  // Actualizar los temporizadores cada segundo.
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      setRelojActual(Date.now());
+    }, 1000);
+
+    return () => clearInterval(intervalo);
+  }, []);
+
+  // Consultar encuestas.
+  const cargarEncuestas = useCallback(async () => {
     setCargando(true);
+
     try {
       const res = await fetch(API_URL);
       const data = await res.json();
-      if (data.exito) {
-        setEncuestas(data.encuestas);
+
+      if (!res.ok || !data.exito) {
+        throw new Error(data.mensaje || "No se pudieron cargar las encuestas.");
       }
+
+      setEncuestas(data.encuestas || []);
     } catch (error) {
       console.error("Error al obtener las encuestas:", error);
     } finally {
       setCargando(false);
     }
-  };
+  }, [API_URL]);
 
   useEffect(() => {
     cargarEncuestas();
-  }, []);
+  }, [cargarEncuestas]);
 
-  // 2. Abrir modal para responder encuesta
+  // Determinar si una encuesta ya venció.
+  const encuestaVencida = (encuesta) => {
+    if (!encuesta?.fecha_cierre) return false;
+
+    const fecha = new Date(encuesta.fecha_cierre).getTime();
+
+    return Number.isFinite(fecha) && fecha <= relojActual;
+  };
+
+  // Mostrar días, horas, minutos y segundos.
+  const obtenerTiempoRestante = (fecha) => {
+    if (!fecha) return "Sin fecha límite";
+
+    const diferencia = new Date(fecha).getTime() - relojActual;
+
+    if (!Number.isFinite(diferencia) || diferencia <= 0) {
+      return "Encuesta vencida";
+    }
+
+    const dias = Math.floor(diferencia / 86400000);
+    const horas = Math.floor((diferencia % 86400000) / 3600000);
+    const minutos = Math.floor((diferencia % 3600000) / 60000);
+    const segundos = Math.floor((diferencia % 60000) / 1000);
+
+    return `${dias}d ${horas}h ${minutos}m ${segundos}s`;
+  };
+
+  // Convertir una fecha a formato local para datetime-local.
+  const convertirFechaLocal = (fecha) => {
+    if (!fecha) return "";
+
+    const date = new Date(fecha);
+
+    if (Number.isNaN(date.getTime())) return "";
+
+    const ajustarZona = new Date(
+      date.getTime() - date.getTimezoneOffset() * 60000
+    );
+
+    return ajustarZona.toISOString().slice(0, 16);
+  };
+
+  // Abrir el modal para crear encuesta.
+  const abrirCrearEncuesta = () => {
+    setNuevoTitulo("");
+    setNuevaDescripcion("");
+    setFechaCierre("");
+    setNuevasPreguntas([
+      { texto_pregunta: "", tipo_respuesta: "escala", opciones: ["", ""] }
+    ]);
+
+    setMostrarModalCrear(true);
+  };
+
+  // Abrir el modal para responder.
   const abrirResponder = async (encuesta) => {
+    if (encuestaVencida(encuesta)) {
+      alert("Esta encuesta ya venció y no admite nuevas respuestas.");
+      return;
+    }
+
     setEncuestaSeleccionada(encuesta);
     setRespuestasForm({});
+
     try {
       const res = await fetch(`${API_URL}/${encuesta.id}`);
       const data = await res.json();
-      if (data.exito) {
-        setPreguntasEncuesta(data.encuesta.preguntas || []);
-        setMostrarModalResponder(true);
+
+      if (!res.ok || !data.exito) {
+        throw new Error(data.mensaje || "No se pudieron cargar las preguntas.");
       }
+
+      const encuestaCompleta = data.encuesta;
+
+      if (encuestaVencida(encuestaCompleta)) {
+        alert("Esta encuesta ya venció.");
+        await cargarEncuestas();
+        return;
+      }
+
+      setEncuestaSeleccionada(encuestaCompleta);
+      setPreguntasEncuesta(encuestaCompleta.preguntas || []);
+      setMostrarModalResponder(true);
     } catch (error) {
       console.error("Error al cargar la encuesta:", error);
-      alert("No se pudieron cargar las preguntas de esta encuesta.");
+      alert(error.message || "No se pudieron cargar las preguntas.");
     }
   };
 
-  // 3. Abrir modal para ver resultados (IA para Admin / Resumen personal para Usuario)
+  // Abrir resultados y solicitar análisis de IA para administradores.
   const abrirResultados = async (encuesta) => {
     setEncuestaSeleccionada(encuesta);
     setAnalisisIA(null);
+    setPreguntasEncuesta([]);
     setMostrarModalResultados(true);
+
+    setCargandoAnalisis(esAdmin);
 
     try {
       const res = await fetch(`${API_URL}/${encuesta.id}`);
       const data = await res.json();
+
       if (data.exito) {
+        setEncuestaSeleccionada(data.encuesta);
         setPreguntasEncuesta(data.encuesta.preguntas || []);
       }
 
-      // Si el usuario es ADMIN, solicitamos el análisis automatizado con la IA
       if (esAdmin) {
-        setCargandoAnalisis(true);
-        const resIA = await fetch(`${API_URL}/${encuesta.id}/analizar-ia`);
+        const resIA = await fetch(
+          `${API_URL}/${encuesta.id}/analizar-ia`
+        );
+
         const dataIA = await resIA.json();
+
         if (dataIA.exito) {
           setAnalisisIA(dataIA.analisis);
         } else {
-          console.error("No se pudo obtener el análisis de la IA:", dataIA.mensaje);
+          console.error(
+            "No se pudo obtener el análisis de la IA:",
+            dataIA.mensaje
+          );
         }
       }
     } catch (error) {
@@ -102,7 +200,7 @@ function Encuestas({ usuario }) {
     }
   };
 
-  // Manejar cambios en las respuestas
+  // Actualizar una respuesta.
   const handleRespuestaChange = (preguntaId, campo, valor) => {
     setRespuestasForm((prev) => ({
       ...prev,
@@ -114,109 +212,239 @@ function Encuestas({ usuario }) {
     }));
   };
 
-  // 4. Guardar Respuestas del Usuario
+  // Enviar respuestas.
   const enviarRespuestas = async (e) => {
     e.preventDefault();
-    const payloadRespuestas = Object.values(respuestasForm);
 
-    if (payloadRespuestas.length === 0) {
-      alert("Por favor responde al menos una pregunta antes de enviar.");
+    if (enviandoRespuestas) return;
+
+    if (encuestaVencida(encuestaSeleccionada)) {
+      alert("El tiempo para responder esta encuesta ha terminado.");
+      setMostrarModalResponder(false);
+      cargarEncuestas();
       return;
     }
 
+    const preguntasObligatorias = preguntasEncuesta.filter((pregunta) => {
+      if (pregunta.tipo_respuesta === "escala") {
+        return !respuestasForm[pregunta.id]?.valor_numero;
+      }
+
+      if (pregunta.tipo_respuesta === "opcion") {
+        return !respuestasForm[pregunta.id]?.opcion_id;
+      }
+
+      if (pregunta.tipo_respuesta === "texto") {
+        return !respuestasForm[pregunta.id]?.valor_texto?.trim();
+      }
+
+      return true;
+    });
+
+    if (preguntasObligatorias.length > 0) {
+      alert("Por favor, responde todas las preguntas antes de enviar.");
+      return;
+    }
+
+    const payloadRespuestas = Object.values(respuestasForm);
+
+    if (payloadRespuestas.length === 0) {
+      alert("Debes responder las preguntas antes de enviar.");
+      return;
+    }
+
+    setEnviandoRespuestas(true);
+
     try {
-      const res = await fetch(`${API_URL}/${encuestaSeleccionada.id}/respuestas`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          usuario_id: usuarioActual?.id || null,
-          respuestas: payloadRespuestas
-        })
-      });
+      const res = await fetch(
+        `${API_URL}/${encuestaSeleccionada.id}/respuestas`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            usuario_id: usuarioActual?.id || null,
+            respuestas: payloadRespuestas
+          })
+        }
+      );
 
       const data = await res.json();
-      if (data.exito) {
-        alert("¡Respuestas enviadas con éxito!");
+
+      if (res.status === 403 && data.vencida) {
+        alert("La encuesta venció. Ya no se pueden enviar respuestas.");
         setMostrarModalResponder(false);
-        cargarEncuestas();
-      } else {
-        alert(data.mensaje || "Error al enviar respuestas.");
+        await cargarEncuestas();
+        return;
       }
+
+      if (!res.ok || !data.exito) {
+        alert(data.mensaje || "Error al enviar las respuestas.");
+        return;
+      }
+
+      alert("¡Respuestas enviadas con éxito!");
+
+      setMostrarModalResponder(false);
+      setRespuestasForm({});
+      await cargarEncuestas();
     } catch (error) {
       console.error("Error al enviar respuestas:", error);
+      alert("No se pudieron enviar las respuestas. Intenta nuevamente.");
+    } finally {
+      setEnviandoRespuestas(false);
     }
   };
 
-  // Manejo de creación de preguntas
+  // Agregar una pregunta.
   const handleAgregarPregunta = () => {
-    setNuevasPreguntas([
-      ...nuevasPreguntas,
+    setNuevasPreguntas((prev) => [
+      ...prev,
       { texto_pregunta: "", tipo_respuesta: "escala", opciones: ["", ""] }
     ]);
   };
 
   const handlePreguntaChange = (index, field, value) => {
-    const list = [...nuevasPreguntas];
-    list[index][field] = value;
-    setNuevasPreguntas(list);
+    setNuevasPreguntas((prev) =>
+      prev.map((pregunta, i) =>
+        i === index ? { ...pregunta, [field]: value } : pregunta
+      )
+    );
   };
 
   const handleOpcionChange = (pIndex, oIndex, value) => {
-    const list = [...nuevasPreguntas];
-    list[pIndex].opciones[oIndex] = value;
-    setNuevasPreguntas(list);
+    setNuevasPreguntas((prev) =>
+      prev.map((pregunta, i) =>
+        i === pIndex
+          ? {
+              ...pregunta,
+              opciones: pregunta.opciones.map((opcion, j) =>
+                j === oIndex ? value : opcion
+              )
+            }
+          : pregunta
+      )
+    );
   };
 
   const handleAgregarOpcion = (pIndex) => {
-    const list = [...nuevasPreguntas];
-    list[pIndex].opciones.push("");
-    setNuevasPreguntas(list);
+    setNuevasPreguntas((prev) =>
+      prev.map((pregunta, i) =>
+        i === pIndex
+          ? { ...pregunta, opciones: [...pregunta.opciones, ""] }
+          : pregunta
+      )
+    );
   };
 
-  // 5. Crear Nueva Encuesta
+  // Crear encuesta.
   const guardarNuevaEncuesta = async (e) => {
     e.preventDefault();
+
+    if (guardandoEncuesta) return;
 
     if (!nuevoTitulo.trim()) {
       alert("El título de la encuesta es obligatorio.");
       return;
     }
 
+    if (
+      nuevasPreguntas.some((pregunta) => !pregunta.texto_pregunta.trim())
+    ) {
+      alert("Todas las preguntas deben tener un texto.");
+      return;
+    }
+
+    for (const pregunta of nuevasPreguntas) {
+      if (pregunta.tipo_respuesta === "opcion") {
+        const opcionesValidas = pregunta.opciones.filter((opcion) =>
+          opcion.trim()
+        );
+
+        if (opcionesValidas.length < 2) {
+          alert("Cada pregunta de opción múltiple debe tener al menos dos opciones.");
+          return;
+        }
+      }
+    }
+
+    let fechaCierreISO = null;
+
+    if (fechaCierre) {
+      const fecha = new Date(fechaCierre);
+
+      if (
+        Number.isNaN(fecha.getTime()) ||
+        fecha.getTime() <= Date.now()
+      ) {
+        alert("Selecciona una fecha y hora de cierre futuras.");
+        return;
+      }
+
+      fechaCierreISO = fecha.toISOString();
+    }
+
+    const preguntasPreparadas = nuevasPreguntas.map((pregunta) => ({
+      ...pregunta,
+      texto_pregunta: pregunta.texto_pregunta.trim(),
+      opciones:
+        pregunta.tipo_respuesta === "opcion"
+          ? pregunta.opciones.filter((opcion) => opcion.trim())
+          : []
+    }));
+
+    setGuardandoEncuesta(true);
+
     try {
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          titulo: nuevoTitulo,
-          descripcion: nuevaDescripcion,
+          titulo: nuevoTitulo.trim(),
+          descripcion: nuevaDescripcion.trim(),
           creado_por: usuarioActual?.id || null,
-          preguntas: nuevasPreguntas
+          fecha_cierre: fechaCierreISO,
+          preguntas: preguntasPreparadas
         })
       });
 
       const data = await res.json();
-      if (data.exito) {
-        alert("¡Encuesta publicada correctamente!");
-        setMostrarModalCrear(false);
-        setNuevoTitulo("");
-        setNuevaDescripcion("");
-        setNuevasPreguntas([{ texto_pregunta: "", tipo_respuesta: "escala", opciones: ["", ""] }]);
-        cargarEncuestas();
-      } else {
+
+      if (!res.ok || !data.exito) {
         alert(data.mensaje || "Error al crear la encuesta.");
+        return;
       }
+
+      alert("¡Encuesta publicada correctamente!");
+
+      setMostrarModalCrear(false);
+      setNuevoTitulo("");
+      setNuevaDescripcion("");
+      setFechaCierre("");
+      setNuevasPreguntas([
+        { texto_pregunta: "", tipo_respuesta: "escala", opciones: ["", ""] }
+      ]);
+
+      await cargarEncuestas();
     } catch (error) {
       console.error("Error al guardar encuesta:", error);
+      alert("No se pudo crear la encuesta.");
+    } finally {
+      setGuardandoEncuesta(false);
     }
   };
 
-  // Métricas Rápidas
-  const encuestasActivas = encuestas.filter((e) => e.estado === "Activa").length;
-  const totalRespuestas = encuestas.reduce((acc, curr) => acc + (curr.respuestasCount || 0), 0);
+  const encuestasActivas = encuestas.filter(
+    (encuesta) =>
+      encuesta.estado === "Activa" && !encuestaVencida(encuesta)
+  ).length;
+
+  const totalRespuestas = encuestas.reduce(
+    (total, encuesta) => total + (encuesta.respuestasCount || 0),
+    0
+  );
 
   return (
     <div className="evaluaciones-container">
-      {/* ENCABEZADO */}
       <div className="config-header">
         <Link to="/inicio" className="btn-volver">←</Link>
         <div>
@@ -225,7 +453,6 @@ function Encuestas({ usuario }) {
         </div>
       </div>
 
-      {/* MÉTRICAS RÁPIDAS */}
       <div className="evaluaciones-kpi-grid">
         <div className="kpi-card">
           <div className="kpi-icon blue">📝</div>
@@ -252,64 +479,124 @@ function Encuestas({ usuario }) {
         </div>
       </div>
 
-      {/* TARJETAS DE ENCUESTAS */}
       <div className="config-card full-width">
         <div className="card-header">
           <h2>LISTA DE ENCUESTAS</h2>
+
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             {esAdmin && (
-              <button className="btn-agregar-usuario" onClick={() => setMostrarModalCrear(true)}>
+              <button
+                className="btn-agregar-usuario"
+                onClick={abrirCrearEncuesta}
+              >
                 ➕ Crear Nueva Encuesta
               </button>
             )}
-            <span className="badge-contador">{encuestas.length} encuestas</span>
+
+            <span className="badge-contador">
+              {encuestas.length} encuestas
+            </span>
           </div>
         </div>
 
         {cargando ? (
-          <p style={{ textAlign: "center", padding: "20px" }}>Cargando encuestas...</p>
+          <p style={{ textAlign: "center", padding: "20px" }}>
+            Cargando encuestas...
+          </p>
+        ) : encuestas.length === 0 ? (
+          <p style={{ textAlign: "center", padding: "20px" }}>
+            No hay encuestas registradas.
+          </p>
         ) : (
           <div className="encuestas-grid">
-            {encuestas.map((enc) => (
-              <div key={enc.id} className="encuesta-card">
-                <div className="encuesta-card-header">
-                  <span className={`status-pill ${enc.estado.toLowerCase()}`}>
-                    {enc.estado}
-                  </span>
-                  <span className="subtexto-puesto">{enc.fechaCreacion}</span>
-                </div>
+            {encuestas.map((enc) => {
+              const vencida = encuestaVencida(enc);
 
-                <h3>{enc.titulo}</h3>
-                <p className="encuesta-desc">{enc.descripcion}</p>
+              return (
+                <div key={enc.id} className="encuesta-card">
+                  <div className="encuesta-card-header">
+                    <span
+                      className={`status-pill ${
+                        vencida ? "vencida" : (enc.estado || "").toLowerCase()
+                      }`}
+                    >
+                      {vencida ? "Vencida" : enc.estado}
+                    </span>
 
-                <div className="encuesta-meta">
-                  <span>❓ {enc.preguntasCount} Preguntas</span>
-                  <span>💬 {enc.respuestasCount} Respuestas</span>
-                </div>
+                    <span className="subtexto-puesto">
+                      {enc.fechaCreacion}
+                    </span>
+                  </div>
 
-                <div className="encuesta-acciones">
-                  {enc.estado === "Activa" && (
-                    <button className="btn-responder" onClick={() => abrirResponder(enc)}>
-                      ✏️ Responder Encuesta
+                  <h3>{enc.titulo}</h3>
+                  <p className="encuesta-desc">{enc.descripcion}</p>
+
+                  <div
+                    className={`encuesta-temporizador ${
+                      vencida ? "vencido" : ""
+                    }`}
+                  >
+                    <span>{vencida ? "🔒" : "⏳"}</span>
+                    <div>
+                      <strong>
+                        {!enc.fecha_cierre
+                          ? "Sin fecha límite"
+                          : vencida
+                            ? "Encuesta vencida"
+                            : "Tiempo restante"}
+                      </strong>
+                      <p>{obtenerTiempoRestante(enc.fecha_cierre)}</p>
+
+                      {enc.fecha_cierre && (
+                        <small>
+                          Cierre: {new Date(enc.fecha_cierre).toLocaleString()}
+                        </small>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="encuesta-meta">
+                    <span>❓ {enc.preguntasCount} Preguntas</span>
+                    <span>💬 {enc.respuestasCount} Respuestas</span>
+                  </div>
+
+                  <div className="encuesta-acciones">
+                    {enc.estado === "Activa" && !vencida && (
+                      <button
+                        className="btn-responder"
+                        onClick={() => abrirResponder(enc)}
+                      >
+                        ✏️ Responder Encuesta
+                      </button>
+                    )}
+
+                    <button
+                      className="btn-resultados"
+                      onClick={() => abrirResultados(enc)}
+                    >
+                      📊 Ver Resultados
                     </button>
-                  )}
-                  <button className="btn-resultados" onClick={() => abrirResultados(enc)}>
-                    📊 Ver Resultados
-                  </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* MODAL 1: CREAR ENCUESTA (Admin) */}
+      {/* MODAL PARA CREAR ENCUESTA */}
       {mostrarModalCrear && esAdmin && (
         <div className="modal-overlay">
           <div className="modal-contenido">
             <div className="modal-header">
               <h2>➕ Crear Nueva Encuesta</h2>
-              <button className="btn-cerrar-modal" onClick={() => setMostrarModalCrear(false)}>✕</button>
+              <button
+                type="button"
+                className="btn-cerrar-modal"
+                onClick={() => setMostrarModalCrear(false)}
+              >
+                ✕
+              </button>
             </div>
 
             <form className="modal-form" onSubmit={guardarNuevaEncuesta}>
@@ -317,7 +604,7 @@ function Encuestas({ usuario }) {
                 <label>Título de la Encuesta *</label>
                 <input
                   type="text"
-                  placeholder="Ej. Clima Organizacional Q2"
+                  placeholder="Ej. Clima Organizacional"
                   className="input-estilizado"
                   value={nuevoTitulo}
                   onChange={(e) => setNuevoTitulo(e.target.value)}
@@ -328,18 +615,42 @@ function Encuestas({ usuario }) {
               <div className="form-grupo">
                 <label>Descripción / Instrucciones</label>
                 <textarea
-                  placeholder="Explica brevemente el objetivo de la encuesta..."
+                  placeholder="Explica el objetivo de la encuesta..."
                   rows="2"
                   className="input-estilizado"
                   value={nuevaDescripcion}
                   onChange={(e) => setNuevaDescripcion(e.target.value)}
-                ></textarea>
+                />
+              </div>
+
+              <div className="form-grupo">
+                <label>📅 Fecha y hora límite para responder</label>
+                <input
+                  type="datetime-local"
+                  className="input-estilizado"
+                  value={fechaCierre}
+                  min={convertirFechaLocal(new Date(Date.now() + 60000))}
+                  onChange={(e) => setFechaCierre(e.target.value)}
+                />
+                <small style={{ color: "#6b7280" }}>
+                  Opcional. Si no seleccionas una fecha, la encuesta no tendrá
+                  un cierre programado.
+                </small>
               </div>
 
               <hr />
 
               {nuevasPreguntas.map((p, pIdx) => (
-                <div key={pIdx} className="pregunta-box" style={{ marginBottom: "15px", border: "1px solid #e5e7eb", padding: "12px", borderRadius: "8px" }}>
+                <div
+                  key={pIdx}
+                  className="pregunta-box"
+                  style={{
+                    marginBottom: "15px",
+                    border: "1px solid #e5e7eb",
+                    padding: "12px",
+                    borderRadius: "8px"
+                  }}
+                >
                   <div className="form-grupo">
                     <label>Pregunta #{pIdx + 1} *</label>
                     <input
@@ -347,7 +658,13 @@ function Encuestas({ usuario }) {
                       placeholder="Escribe la pregunta..."
                       className="input-estilizado"
                       value={p.texto_pregunta}
-                      onChange={(e) => handlePreguntaChange(pIdx, "texto_pregunta", e.target.value)}
+                      onChange={(e) =>
+                        handlePreguntaChange(
+                          pIdx,
+                          "texto_pregunta",
+                          e.target.value
+                        )
+                      }
                       required
                     />
                   </div>
@@ -357,7 +674,13 @@ function Encuestas({ usuario }) {
                     <select
                       className="input-estilizado"
                       value={p.tipo_respuesta}
-                      onChange={(e) => handlePreguntaChange(pIdx, "tipo_respuesta", e.target.value)}
+                      onChange={(e) =>
+                        handlePreguntaChange(
+                          pIdx,
+                          "tipo_respuesta",
+                          e.target.value
+                        )
+                      }
                     >
                       <option value="escala">Escala de 1 a 5 estrellas</option>
                       <option value="opcion">Opción múltiple</option>
@@ -367,7 +690,8 @@ function Encuestas({ usuario }) {
 
                   {p.tipo_respuesta === "opcion" && (
                     <div style={{ marginLeft: "10px" }}>
-                      <label style={{ fontSize: "0.85rem", fontWeight: "bold" }}>Opciones:</label>
+                      <label>Opciones:</label>
+
                       {p.opciones.map((op, oIdx) => (
                         <input
                           key={oIdx}
@@ -376,12 +700,15 @@ function Encuestas({ usuario }) {
                           className="input-estilizado"
                           style={{ marginTop: "4px" }}
                           value={op}
-                          onChange={(e) => handleOpcionChange(pIdx, oIdx, e.target.value)}
+                          onChange={(e) =>
+                            handleOpcionChange(pIdx, oIdx, e.target.value)
+                          }
                         />
                       ))}
+
                       <button
                         type="button"
-                        style={{ marginTop: "6px", fontSize: "0.8rem", cursor: "pointer" }}
+                        style={{ marginTop: "6px", cursor: "pointer" }}
                         onClick={() => handleAgregarOpcion(pIdx)}
                       >
                         ➕ Agregar Opción
@@ -391,16 +718,29 @@ function Encuestas({ usuario }) {
                 </div>
               ))}
 
-              <button type="button" className="btn-agregar-pregunta" onClick={handleAgregarPregunta}>
+              <button
+                type="button"
+                className="btn-agregar-pregunta"
+                onClick={handleAgregarPregunta}
+              >
                 ➕ Agregar otra pregunta
               </button>
 
               <div className="modal-acciones">
-                <button type="button" className="btn-cancelar" onClick={() => setMostrarModalCrear(false)}>
+                <button
+                  type="button"
+                  className="btn-cancelar"
+                  onClick={() => setMostrarModalCrear(false)}
+                >
                   Cancelar
                 </button>
-                <button type="submit" className="btn-guardar">
-                  Publicar Encuesta
+
+                <button
+                  type="submit"
+                  className="btn-guardar"
+                  disabled={guardandoEncuesta}
+                >
+                  {guardandoEncuesta ? "Publicando..." : "Publicar Encuesta"}
                 </button>
               </div>
             </form>
@@ -408,17 +748,49 @@ function Encuestas({ usuario }) {
         </div>
       )}
 
-      {/* MODAL 2: RESPONDER ENCUESTA */}
+      {/* MODAL PARA RESPONDER */}
       {mostrarModalResponder && encuestaSeleccionada && (
         <div className="modal-overlay">
           <div className="modal-contenido">
             <div className="modal-header">
               <h2>✏️ {encuestaSeleccionada.titulo}</h2>
-              <button className="btn-cerrar-modal" onClick={() => setMostrarModalResponder(false)}>✕</button>
+              <button
+                type="button"
+                className="btn-cerrar-modal"
+                onClick={() => setMostrarModalResponder(false)}
+              >
+                ✕
+              </button>
             </div>
 
             <form className="modal-form" onSubmit={enviarRespuestas}>
-              <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>{encuestaSeleccionada.descripcion}</p>
+              <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
+                {encuestaSeleccionada.descripcion}
+              </p>
+
+              {encuestaSeleccionada.fecha_cierre && (
+                <div
+                  className={`encuesta-temporizador ${
+                    encuestaVencida(encuestaSeleccionada) ? "vencido" : ""
+                  }`}
+                >
+                  <span>
+                    {encuestaVencida(encuestaSeleccionada) ? "🔒" : "⏳"}
+                  </span>
+                  <div>
+                    <strong>
+                      {encuestaVencida(encuestaSeleccionada)
+                        ? "Tiempo terminado"
+                        : "Tiempo para responder"}
+                    </strong>
+                    <p>
+                      {obtenerTiempoRestante(
+                        encuestaSeleccionada.fecha_cierre
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {preguntasEncuesta.map((preg, idx) => (
                 <div key={preg.id} className="pregunta-box">
@@ -426,15 +798,25 @@ function Encuestas({ usuario }) {
                     {idx + 1}. {preg.texto_pregunta}
                   </label>
 
-                  {/* ESCALA DE 1 A 5 */}
                   {preg.tipo_respuesta === "escala" && (
                     <div className="rating-options">
                       {[1, 2, 3, 4, 5].map((num) => (
                         <button
                           key={num}
                           type="button"
-                          className={`btn-rating ${respuestasForm[preg.id]?.valor_numero === num ? "activo" : ""}`}
-                          onClick={() => handleRespuestaChange(preg.id, "valor_numero", num)}
+                          disabled={encuestaVencida(encuestaSeleccionada)}
+                          className={`btn-rating ${
+                            respuestasForm[preg.id]?.valor_numero === num
+                              ? "activo"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            handleRespuestaChange(
+                              preg.id,
+                              "valor_numero",
+                              num
+                            )
+                          }
                         >
                           {num} ⭐
                         </button>
@@ -442,7 +824,6 @@ function Encuestas({ usuario }) {
                     </div>
                   )}
 
-                  {/* OPCIÓN MÚLTIPLE */}
                   {preg.tipo_respuesta === "opcion" && (
                     <div className="radio-group">
                       {preg.opciones?.map((opc) => (
@@ -450,8 +831,17 @@ function Encuestas({ usuario }) {
                           <input
                             type="radio"
                             name={`pregunta_${preg.id}`}
-                            checked={respuestasForm[preg.id]?.opcion_id === opc.id}
-                            onChange={() => handleRespuestaChange(preg.id, "opcion_id", opc.id)}
+                            disabled={encuestaVencida(encuestaSeleccionada)}
+                            checked={
+                              respuestasForm[preg.id]?.opcion_id === opc.id
+                            }
+                            onChange={() =>
+                              handleRespuestaChange(
+                                preg.id,
+                                "opcion_id",
+                                opc.id
+                              )
+                            }
                           />
                           {opc.texto_opcion}
                         </label>
@@ -459,25 +849,47 @@ function Encuestas({ usuario }) {
                     </div>
                   )}
 
-                  {/* TEXTO ABIERTO */}
                   {preg.tipo_respuesta === "texto" && (
                     <textarea
                       rows="3"
                       placeholder="Escribe tus comentarios..."
                       className="input-estilizado"
+                      disabled={encuestaVencida(encuestaSeleccionada)}
                       value={respuestasForm[preg.id]?.valor_texto || ""}
-                      onChange={(e) => handleRespuestaChange(preg.id, "valor_texto", e.target.value)}
-                    ></textarea>
+                      onChange={(e) =>
+                        handleRespuestaChange(
+                          preg.id,
+                          "valor_texto",
+                          e.target.value
+                        )
+                      }
+                    />
                   )}
                 </div>
               ))}
 
               <div className="modal-acciones">
-                <button type="button" className="btn-cancelar" onClick={() => setMostrarModalResponder(false)}>
+                <button
+                  type="button"
+                  className="btn-cancelar"
+                  onClick={() => setMostrarModalResponder(false)}
+                >
                   Cancelar
                 </button>
-                <button type="submit" className="btn-guardar">
-                  Enviar Respuestas
+
+                <button
+                  type="submit"
+                  className="btn-guardar"
+                  disabled={
+                    enviandoRespuestas ||
+                    encuestaVencida(encuestaSeleccionada)
+                  }
+                >
+                  {encuestaVencida(encuestaSeleccionada)
+                    ? "Encuesta vencida"
+                    : enviandoRespuestas
+                      ? "Enviando..."
+                      : "Enviar Respuestas"}
                 </button>
               </div>
             </form>
@@ -485,7 +897,7 @@ function Encuestas({ usuario }) {
         </div>
       )}
 
-      {/* MODAL 3: RESULTADOS (Análisis IA para Admin vs Resumen Personal para Usuario) */}
+      {/* MODAL DE RESULTADOS */}
       {mostrarModalResultados && encuestaSeleccionada && (
         <div className="modal-overlay">
           <div className="modal-contenido" style={{ maxWidth: "700px" }}>
@@ -495,104 +907,164 @@ function Encuestas({ usuario }) {
                   ? `🤖 Análisis con IA: ${encuestaSeleccionada.titulo}`
                   : `👤 Mi Resumen: ${encuestaSeleccionada.titulo}`}
               </h2>
-              <button className="btn-cerrar-modal" onClick={() => setMostrarModalResultados(false)}>✕</button>
+
+              <button
+                type="button"
+                className="btn-cerrar-modal"
+                onClick={() => setMostrarModalResultados(false)}
+              >
+                ✕
+              </button>
             </div>
 
             <div style={{ padding: "15px 0" }}>
               {esAdmin ? (
-                /* VISTA ADMINISTRADOR: RESULTADOS CON ANÁLISIS DE IA */
                 <div>
                   <p style={{ color: "#4b5563", marginBottom: "15px" }}>
-                    <strong>Modo Administrador:</strong> Diagnóstico generado automáticamente a partir de todas las respuestas recopiladas.
+                    <strong>Modo Administrador:</strong> Diagnóstico generado
+                    a partir de las respuestas recopiladas.
                   </p>
 
                   {cargandoAnalisis ? (
                     <div style={{ textAlign: "center", padding: "40px 20px" }}>
-                      <p style={{ fontSize: "1.2rem", fontWeight: "bold", color: "#2563eb" }}>🤖 La IA está analizando las respuestas...</p>
-                      <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>Sintetizando conclusiones, áreas de oportunidad y recomendaciones.</p>
+                      <p style={{ fontWeight: "bold", color: "#2563eb" }}>
+                        🤖 La IA está analizando las respuestas...
+                      </p>
+                      <p style={{ color: "#6b7280" }}>
+                        Sintetizando conclusiones y recomendaciones.
+                      </p>
                     </div>
                   ) : analisisIA ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                      {/* MÉTRICAS CLAVE */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                        <div style={{ padding: "12px", background: "#f3f4f6", borderRadius: "8px", textAlign: "center" }}>
-                          <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>Sentimiento Predominante</span>
-                          <p style={{ fontWeight: "bold", fontSize: "1.1rem", margin: "4px 0 0", color: "#2563eb" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "16px"
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "10px"
+                        }}
+                      >
+                        <div
+                          style={{
+                            padding: "12px",
+                            background: "#f3f4f6",
+                            borderRadius: "8px",
+                            textAlign: "center"
+                          }}
+                        >
+                          <span>Sentimiento Predominante</span>
+                          <p style={{ fontWeight: "bold", color: "#2563eb" }}>
                             {analisisIA.sentimiento_predominante || "Neutro"}
                           </p>
                         </div>
-                        <div style={{ padding: "12px", background: "#f3f4f6", borderRadius: "8px", textAlign: "center" }}>
-                          <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>Puntuación Estimada</span>
-                          <p style={{ fontWeight: "bold", fontSize: "1.1rem", margin: "4px 0 0", color: "#16a34a" }}>
+
+                        <div
+                          style={{
+                            padding: "12px",
+                            background: "#f3f4f6",
+                            borderRadius: "8px",
+                            textAlign: "center"
+                          }}
+                        >
+                          <span>Puntuación Estimada</span>
+                          <p style={{ fontWeight: "bold", color: "#16a34a" }}>
                             {analisisIA.puntuacion_promedio || "N/A"}
                           </p>
                         </div>
                       </div>
 
-                      {/* RESUMEN EJECUTIVO */}
                       <div>
-                        <h3 style={{ fontSize: "1rem", color: "#1f2937" }}>📝 Resumen Ejecutivo</h3>
-                        <p style={{ color: "#4b5563", lineHeight: "1.5" }}>{analisisIA.resumen_ejecutivo}</p>
+                        <h3>📝 Resumen Ejecutivo</h3>
+                        <p>{analisisIA.resumen_ejecutivo}</p>
                       </div>
 
-                      {/* HALLAZGOS CLAVE */}
                       <div>
-                        <h3 style={{ fontSize: "1rem", color: "#16a34a" }}>✅ Hallazgos Clave / Puntos Fuertes</h3>
-                        <ul style={{ paddingLeft: "20px", color: "#374151" }}>
+                        <h3>✅ Hallazgos Clave / Puntos Fuertes</h3>
+                        <ul>
                           {analisisIA.hallazgos_clave?.map((item, idx) => (
-                            <li key={idx} style={{ marginBottom: "4px" }}>{item}</li>
+                            <li key={idx}>{item}</li>
                           ))}
                         </ul>
                       </div>
 
-                      {/* ÁREAS CRÍTICAS */}
                       <div>
-                        <h3 style={{ fontSize: "1rem", color: "#dc2626" }}>⚠️ Áreas Críticas / Oportunidad</h3>
-                        <ul style={{ paddingLeft: "20px", color: "#374151" }}>
+                        <h3>⚠️ Áreas Críticas / Oportunidad</h3>
+                        <ul>
                           {analisisIA.areas_criticas?.map((item, idx) => (
-                            <li key={idx} style={{ marginBottom: "4px" }}>{item}</li>
+                            <li key={idx}>{item}</li>
                           ))}
                         </ul>
                       </div>
 
-                      {/* PLAN DE ACCIÓN */}
                       <div>
-                        <h3 style={{ fontSize: "1rem", color: "#2563eb" }}>💡 Recomendaciones Sugeridas</h3>
-                        <ul style={{ paddingLeft: "20px", color: "#374151" }}>
+                        <h3>💡 Recomendaciones Sugeridas</h3>
+                        <ul>
                           {analisisIA.plan_de_accion?.map((item, idx) => (
-                            <li key={idx} style={{ marginBottom: "4px" }}>{item}</li>
+                            <li key={idx}>{item}</li>
                           ))}
                         </ul>
                       </div>
                     </div>
                   ) : (
-                    <p style={{ textAlign: "center", color: "#dc2626" }}>No se pudo cargar el análisis de la IA o aún no hay suficientes respuestas registradas.</p>
+                    <p style={{ textAlign: "center", color: "#dc2626" }}>
+                      No se pudo cargar el análisis de la IA o todavía no hay
+                      suficientes respuestas.
+                    </p>
                   )}
                 </div>
               ) : (
-                /* VISTA USUARIO NORMAL: RESUMEN PERSONAL */
                 <div>
                   <p style={{ color: "#4b5563", marginBottom: "15px" }}>
-                    <strong>Resumen Individual:</strong> Confirmación de participación en esta evaluación.
+                    <strong>Resumen Individual:</strong> Consulta el estado
+                    de esta evaluación.
                   </p>
 
-                  <div style={{ padding: "12px", background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: "8px", marginBottom: "20px" }}>
-                    <span style={{ color: "#065f46", fontWeight: "bold" }}>
-                      ✅ Estado: Encuesta completada
-                    </span>
-                    <p style={{ fontSize: "0.85rem", color: "#047857", margin: "4px 0 0" }}>
-                      Gracias por colaborar. Tus respuestas se incorporaron al análisis global de la plataforma.
+                  <div
+                    style={{
+                      padding: "12px",
+                      background: "#ecfdf5",
+                      border: "1px solid #a7f3d0",
+                      borderRadius: "8px",
+                      marginBottom: "20px"
+                    }}
+                  >
+                    <strong style={{ color: "#065f46" }}>
+                      Estado de la encuesta
+                    </strong>
+                    <p style={{ color: "#047857" }}>
+                      {encuestaVencida(encuestaSeleccionada)
+                        ? "El periodo para responder ha finalizado."
+                        : "Consulta las preguntas de esta evaluación."}
                     </p>
                   </div>
 
-                  <h3>Preguntas Evaluadas:</h3>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "10px" }}>
+                  <h3>Preguntas de la encuesta</h3>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "10px",
+                      marginTop: "10px"
+                    }}
+                  >
                     {preguntasEncuesta.map((p, idx) => (
-                      <div key={p.id} style={{ padding: "10px", border: "1px solid #e5e7eb", borderRadius: "6px" }}>
-                        <p style={{ fontWeight: "bold", margin: 0 }}>{idx + 1}. {p.texto_pregunta}</p>
-                        <span style={{ fontSize: "0.8rem", color: "#16a34a", fontWeight: "500" }}>
-                          ✓ Registrada
-                        </span>
+                      <div
+                        key={p.id}
+                        style={{
+                          padding: "10px",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: "6px"
+                        }}
+                      >
+                        <p style={{ fontWeight: "bold", margin: 0 }}>
+                          {idx + 1}. {p.texto_pregunta}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -601,7 +1073,10 @@ function Encuestas({ usuario }) {
             </div>
 
             <div className="modal-acciones">
-              <button className="btn-cancelar" onClick={() => setMostrarModalResultados(false)}>
+              <button
+                className="btn-cancelar"
+                onClick={() => setMostrarModalResultados(false)}
+              >
                 Cerrar Reporte
               </button>
             </div>
