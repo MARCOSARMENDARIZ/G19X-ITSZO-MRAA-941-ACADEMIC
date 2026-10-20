@@ -351,6 +351,8 @@ app.post('/api/cambiar-password-directo', async (req, res) => {
 // 1. Obtener todas las encuestas, incluyendo la fecha límite.
 
 app.get('/api/encuestas', async (req, res) => {
+  const usuarioId = req.query.usuario_id;
+
   try {
     const query = `
       SELECT
@@ -361,7 +363,12 @@ app.get('/api/encuestas', async (req, res) => {
         e.fecha_cierre,
         TO_CHAR(e.fecha_creacion, 'DD/MM/YYYY') AS "fechaCreacion",
         COUNT(DISTINCT p.id)::INT AS "preguntasCount",
-        COUNT(DISTINCT re.id)::INT AS "respuestasCount"
+        COUNT(DISTINCT re.id)::INT AS "respuestasCount",
+        CASE 
+          WHEN $1::int IS NOT NULL THEN 
+            EXISTS(SELECT 1 FROM respuestas_encuesta r WHERE r.encuesta_id = e.id AND r.usuario_id = $1::int)
+          ELSE FALSE
+        END AS "yaRespondida"
       FROM encuestas e
       LEFT JOIN preguntas p ON e.id = p.encuesta_id
       LEFT JOIN respuestas_encuesta re ON e.id = re.encuesta_id
@@ -369,7 +376,7 @@ app.get('/api/encuestas', async (req, res) => {
       ORDER BY e.fecha_creacion DESC;
     `;
 
-    const result = await pool.query(query);
+    const result = await pool.query(query, [usuarioId || null]);
 
     return res.json({
       exito: true,

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 
@@ -46,12 +45,13 @@ function Encuestas({ usuario }) {
     return () => clearInterval(intervalo);
   }, []);
 
-  // Consultar encuestas.
+  // Consultar encuestas (pasando el usuario_id para que el backend sepa cuáles ya respondió).
   const cargarEncuestas = useCallback(async () => {
     setCargando(true);
 
     try {
-      const res = await fetch(API_URL);
+      const userId = usuarioActual?.id ? `?usuario_id=${usuarioActual.id}` : "";
+      const res = await fetch(`${API_URL}${userId}`);
       const data = await res.json();
 
       if (!res.ok || !data.exito) {
@@ -64,7 +64,7 @@ function Encuestas({ usuario }) {
     } finally {
       setCargando(false);
     }
-  }, [API_URL]);
+  }, [API_URL, usuarioActual?.id]);
 
   useEffect(() => {
     cargarEncuestas();
@@ -128,6 +128,11 @@ function Encuestas({ usuario }) {
   const abrirResponder = async (encuesta) => {
     if (encuestaVencida(encuesta)) {
       alert("Esta encuesta ya venció y no admite nuevas respuestas.");
+      return;
+    }
+
+    if (encuesta.yaRespondida) {
+      alert("Ya has respondido esta encuesta anteriormente.");
       return;
     }
 
@@ -269,6 +274,13 @@ function Encuestas({ usuario }) {
       );
 
       const data = await res.json();
+
+      if (res.status === 409) {
+        alert(data.mensaje || "Ya has respondido esta encuesta anteriormente.");
+        setMostrarModalResponder(false);
+        await cargarEncuestas();
+        return;
+      }
 
       if (res.status === 403 && data.vencida) {
         alert("La encuesta venció. Ya no se pueden enviar respuestas.");
@@ -561,13 +573,19 @@ function Encuestas({ usuario }) {
                   </div>
 
                   <div className="encuesta-acciones">
-                    {enc.estado === "Activa" && !vencida && (
+                    {enc.estado === "Activa" && !vencida && !enc.yaRespondida && (
                       <button
                         className="btn-responder"
                         onClick={() => abrirResponder(enc)}
                       >
                         ✏️ Responder Encuesta
                       </button>
+                    )}
+
+                    {enc.yaRespondida && (
+                      <span style={{ color: "#16a34a", fontWeight: "bold", fontSize: "0.9rem" }}>
+                        ✅ Ya respondida
+                      </span>
                     )}
 
                     <button
@@ -991,94 +1009,16 @@ function Encuestas({ usuario }) {
                           ))}
                         </ul>
                       </div>
-
-                      <div>
-                        <h3>⚠️ Áreas Críticas / Oportunidad</h3>
-                        <ul>
-                          {analisisIA.areas_criticas?.map((item, idx) => (
-                            <li key={idx}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div>
-                        <h3>💡 Recomendaciones Sugeridas</h3>
-                        <ul>
-                          {analisisIA.plan_de_accion?.map((item, idx) => (
-                            <li key={idx}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
                     </div>
                   ) : (
-                    <p style={{ textAlign: "center", color: "#dc2626" }}>
-                      No se pudo cargar el análisis de la IA o todavía no hay
-                      suficientes respuestas.
+                    <p style={{ textAlign: "center", color: "#6b7280" }}>
+                      No se pudo generar el análisis en este momento.
                     </p>
                   )}
                 </div>
               ) : (
-                <div>
-                  <p style={{ color: "#4b5563", marginBottom: "15px" }}>
-                    <strong>Resumen Individual:</strong> Consulta el estado
-                    de esta evaluación.
-                  </p>
-
-                  <div
-                    style={{
-                      padding: "12px",
-                      background: "#ecfdf5",
-                      border: "1px solid #a7f3d0",
-                      borderRadius: "8px",
-                      marginBottom: "20px"
-                    }}
-                  >
-                    <strong style={{ color: "#065f46" }}>
-                      Estado de la encuesta
-                    </strong>
-                    <p style={{ color: "#047857" }}>
-                      {encuestaVencida(encuestaSeleccionada)
-                        ? "El periodo para responder ha finalizado."
-                        : "Consulta las preguntas de esta evaluación."}
-                    </p>
-                  </div>
-
-                  <h3>Preguntas de la encuesta</h3>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "10px",
-                      marginTop: "10px"
-                    }}
-                  >
-                    {preguntasEncuesta.map((p, idx) => (
-                      <div
-                        key={p.id}
-                        style={{
-                          padding: "10px",
-                          border: "1px solid #e5e7eb",
-                          borderRadius: "6px"
-                        }}
-                      >
-                        <p style={{ fontWeight: "bold", margin: 0 }}>
-                          {idx + 1}. {p.texto_pregunta}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <p>Tus respuestas han sido registradas correctamente.</p>
               )}
-            </div>
-
-            <div className="modal-acciones">
-              <button
-                className="btn-cancelar"
-                onClick={() => setMostrarModalResultados(false)}
-              >
-                Cerrar Reporte
-              </button>
             </div>
           </div>
         </div>
