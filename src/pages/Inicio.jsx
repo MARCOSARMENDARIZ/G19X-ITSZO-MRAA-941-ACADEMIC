@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 
 function Inicio() {
@@ -11,6 +11,14 @@ function Inicio() {
       setUsuario(JSON.parse(usuarioGuardado));
     }
   }, []);
+
+  const navigate = useNavigate();
+
+  const cerrarSesion = () => {
+    localStorage.removeItem("usuario");
+    setUsuario(null);
+    navigate("/", { replace: true });
+  };
 
   return (
     <div className="inicio-container">
@@ -29,18 +37,18 @@ function Inicio() {
             <span>Tablero</span>
           </a>
           <Link to="/chat" className="menu-item">
-           <i class="bi bi-chat-left-dots-fill" style={{ color: '#1ED760'}}></i> 
-           <span>Chat de ayuda</span>
+            <i class="bi bi-chat-left-dots-fill" style={{ color: '#1ED760' }}></i>
+            <span>Chat de ayuda</span>
           </Link>
 
           <Link to="/bienestar" className="menu-item">
-          <i className="bi bi-heart-pulse-fill" style={{ color: '#DE0011' }}></i>
-           <span> Bienestar </span>
+            <i className="bi bi-heart-pulse-fill" style={{ color: '#DE0011' }}></i>
+            <span> Bienestar </span>
           </Link>
 
           <Link to="/evaluaciones" className="menu-item">
-            <i class="bi bi-card-checklist" style={{ color: '#7740ff '}}></i> 
-            <span>Evaluaciones</span> 
+            <i class="bi bi-card-checklist" style={{ color: '#7740ff ' }}></i>
+            <span>Evaluaciones</span>
           </Link>
 
           <Link to="/perfil" className="menu-item">
@@ -57,10 +65,16 @@ function Inicio() {
             </Link>
           )}
 
-          <a href="/" className="menu-item logout">
-           <i class="bi bi-door-closed-fill" style={{color: '#DE0011'}}></i> 
-           <span>Cerrar sesión</span>
-          </a>
+
+          <button
+            type="button"
+            className="menu-item logout"
+            onClick={cerrarSesion}
+          >
+            <i className="bi bi-door-closed-fill" style={{ color: '#DE0011' }}></i>
+            <span>Cerrar sesión</span>
+          </button>
+
 
         </div>
 
@@ -130,7 +144,7 @@ function Inicio() {
 
           {/* ACTIVIDAD Y ALERTAS RECIENTES */}
           <section className="dashboard-card">
-            <h3><i class="bi bi-bell-fill" style={{color: '#FDD55B'}}></i> Actividad y Novedades</h3>
+            <h3><i class="bi bi-bell-fill" style={{ color: '#FDD55B' }}></i> Actividad y Novedades</h3>
             <p className="card-description">Eventos recientes en la plataforma</p>
 
             <ul className="activity-list">

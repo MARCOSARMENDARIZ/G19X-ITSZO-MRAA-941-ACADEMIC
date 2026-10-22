@@ -1,46 +1,35 @@
 
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import RutaProtegida from './RutaProtegida'
 
 import Login from './pages/Login'
 import Inicio from './pages/Inicio'
-import Perfil from './pages/Perfil' 
-
-import './App.css'
+import Perfil from './pages/Perfil'
 import Configuracion from './pages/configuracion'
 import Evaluaciones from './pages/Evaluaciones'
 import Bienestar from './pages/Bienestar'
 import Chatbot from './pages/Chatbot'
 
-function App() {
+import './App.css'
 
+function App() {
   return (
     <BrowserRouter>
-
       <Routes>
-
-        {/* PANTALLA DE LOGIN */}
         <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
 
-        {/* SISTEMA */}
-        <Route path="/inicio" element={<Inicio />} />
+        <Route element={<RutaProtegida />}>
+          <Route path="/inicio" element={<Inicio />} />
+          <Route path="/perfil" element={<Perfil />} />
+          <Route path="/configuracion" element={<Configuracion />} />
+          <Route path="/evaluaciones" element={<Evaluaciones />} />
+          <Route path="/bienestar" element={<Bienestar />} />
+          <Route path="/chat" element={<Chatbot />} />
+        </Route>
 
-        {/* PERFIL */}
-        <Route path="/perfil" element={<Perfil />} />
-
-        {/* CONFIGURACION */}
-        <Route path="/configuracion" element={<Configuracion />} />
-
-        {/* EVALUACIONES */}
-        <Route path="/evaluaciones" element={<Evaluaciones />} />
-
-        {/* EVALUACIONES */}
-        <Route path="/bienestar" element={<Bienestar />} />
-
-        {/* CHAT */}
-        <Route path="/chat" element={<Chatbot />} />
-
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-
     </BrowserRouter>
   )
 }
