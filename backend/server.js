@@ -2,15 +2,13 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-const { GoogleGenAI } = require('@google/genai');
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY
-});
 
 console.log(
   'Password cargada correctamente:',
@@ -29,6 +27,23 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT
 });
+
+
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  },
+  tls: {
+    minVersion: 'TLSv1.2'
+  }
+});
+
+
 
 // =========================================================================
 // RUTA DE PRUEBA
@@ -272,75 +287,6 @@ app.delete('/api/usuarios/:id', async (req, res) => {
     });
   } finally {
     client.release();
-  }
-});
-
-// =========================================================================
-// RECUPERACIÓN DE CONTRASEÑA
-// =========================================================================
-
-app.post('/api/verificar-email', async (req, res) => {
-  const { email } = req.body;
-
-  try {
-    const result = await pool.query(
-      'SELECT id, email FROM usuarios WHERE email = $1',
-      [email]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        exito: false,
-        mensaje: 'El correo electrónico no está registrado'
-      });
-    }
-
-    return res.json({
-      exito: true,
-      mensaje: 'Usuario encontrado'
-    });
-  } catch (error) {
-    console.error('Error al verificar correo:', error);
-
-    return res.status(500).json({
-      exito: false,
-      mensaje: 'Error interno del servidor'
-    });
-  }
-});
-
-app.post('/api/cambiar-password-directo', async (req, res) => {
-  const { email, nuevaPassword } = req.body;
-
-  try {
-    const passwordHash = await bcrypt.hash(nuevaPassword, 10);
-
-    const result = await pool.query(
-      `UPDATE usuarios
-       SET password_hash = $1
-       WHERE email = $2
-       RETURNING id`,
-      [passwordHash, email]
-    );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({
-        exito: false,
-        mensaje: 'No se pudo encontrar el usuario'
-      });
-    }
-
-    return res.json({
-      exito: true,
-      mensaje: 'Contraseña actualizada exitosamente'
-    });
-  } catch (error) {
-    console.error('Error al cambiar contraseña:', error);
-
-    return res.status(500).json({
-      exito: false,
-      mensaje: 'Error al actualizar la contraseña'
-    });
   }
 });
 
@@ -1510,6 +1456,315 @@ Responde en español, de forma clara y profesional.
       exito: false,
       mensaje: 'Ocurrió un error al procesar el análisis de viabilidad.'
     });
+  }
+});
+
+// =========================================================================
+// Generason de codigo  de verificacion
+// =========================================================================
+
+const generarHashCodigo = (codigo) =>
+  crypto.createHash('sha256').update(codigo).digest('hex');
+
+// 1. Enviar código al correo registrado.
+app.post('/api/verificar-email', async (req, res) => {
+  const email =
+    typeof req.body.email === 'string'
+      ? req.body.email.trim().toLowerCase()
+      : '';
+
+  if (!email) {
+    return res.status(400).json({
+      exito: false,
+      mensaje: 'Ingresa un correo electrónico válido.'
+    });
+  }
+
+  try {
+    const resultado = await pool.query(
+      `SELECT id, email, nombre
+       FROM usuarios
+       WHERE LOWER(email) = $1`,
+      [email]
+    );
+
+    // No revelar si una cuenta existe o no.
+    if (resultado.rowCount === 0) {
+      return res.json({
+        exito: true,
+        mensaje:
+          'Si el correo está registrado, recibirás un código de verificación.'
+      });
+    }
+
+    const usuario = resultado.rows[0];
+
+    const codigo = crypto
+      .randomInt(0, 1000000)
+      .toString()
+      .padStart(6, '0');
+
+    const codigoHash = generarHashCodigo(codigo);
+
+    await pool.query(
+      'DELETE FROM recuperacion_password WHERE usuario_id = $1',
+      [usuario.id]
+    );
+
+    await pool.query(
+      `INSERT INTO recuperacion_password
+         (usuario_id, codigo_hash, expira_en)
+       VALUES ($1, $2, NOW() + INTERVAL '10 minutes')`,
+      [usuario.id, codigoHash]
+    );
+
+    try {
+      await transporter.sendMail({
+        from: process.env.SMTP_USER,
+        to: usuario.email,
+        subject: 'Código para cambiar tu contraseña - Bienestar IA',
+        text:
+          `Hola ${usuario.nombre},\n\n` +
+          `Tu código para cambiar la contraseña es: ${codigo}\n\n` +
+          'El código caduca en 10 minutos y solo puede utilizarse una vez.\n\n' +
+          'Si no solicitaste este cambio, ignora este correo.'
+      });
+    } catch (errorCorreo) {
+      await pool.query(
+        'DELETE FROM recuperacion_password WHERE usuario_id = $1',
+        [usuario.id]
+      );
+
+      throw errorCorreo;
+    }
+
+    return res.json({
+      exito: true,
+      mensaje:
+        'Si el correo está registrado, recibirás un código de verificación.'
+    });
+  } catch (error) {
+    console.error('Error al enviar código de recuperación:', error);
+
+    return res.status(500).json({
+      exito: false,
+      mensaje: 'No se pudo enviar el correo. Inténtalo nuevamente.'
+    });
+  }
+});
+
+// 2. Verificar el código recibido.
+app.post('/api/verificar-codigo', async (req, res) => {
+  const email =
+    typeof req.body.email === 'string'
+      ? req.body.email.trim().toLowerCase()
+      : '';
+
+  const codigo =
+    typeof req.body.codigo === 'string'
+      ? req.body.codigo.trim()
+      : '';
+
+  if (!email || !/^\d{6}$/.test(codigo)) {
+    return res.status(400).json({
+      exito: false,
+      mensaje: 'Ingresa el correo y el código de seis dígitos.'
+    });
+  }
+
+  try {
+    const resultado = await pool.query(
+      `SELECT r.id, r.codigo_hash, r.expira_en,
+              r.intentos, r.verificado_en
+       FROM recuperacion_password r
+       JOIN usuarios u ON u.id = r.usuario_id
+       WHERE LOWER(u.email) = $1
+       ORDER BY r.creado_en DESC
+       LIMIT 1`,
+      [email]
+    );
+
+    if (resultado.rowCount === 0) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'El código no es válido o ha caducado.'
+      });
+    }
+
+    const registro = resultado.rows[0];
+
+    if (
+      new Date(registro.expira_en) <= new Date() ||
+      Number(registro.intentos) >= 5
+    ) {
+      await pool.query(
+        'DELETE FROM recuperacion_password WHERE id = $1',
+        [registro.id]
+      );
+
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'El código ha caducado. Solicita uno nuevo.'
+      });
+    }
+
+    const hashIngresado = generarHashCodigo(codigo);
+
+    if (hashIngresado !== registro.codigo_hash) {
+      const intentos = Number(registro.intentos) + 1;
+
+      if (intentos >= 5) {
+        await pool.query(
+          'DELETE FROM recuperacion_password WHERE id = $1',
+          [registro.id]
+        );
+      } else {
+        await pool.query(
+          `UPDATE recuperacion_password
+           SET intentos = $1
+           WHERE id = $2`,
+          [intentos, registro.id]
+        );
+      }
+
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'Código incorrecto. Revisa el correo e inténtalo de nuevo.'
+      });
+    }
+
+    if (registro.verificado_en) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'Este código ya fue verificado. Solicita uno nuevo.'
+      });
+    }
+
+    await pool.query(
+      `UPDATE recuperacion_password
+       SET verificado_en = NOW()
+       WHERE id = $1`,
+      [registro.id]
+    );
+
+    return res.json({
+      exito: true,
+      mensaje: 'Código verificado correctamente.'
+    });
+  } catch (error) {
+    console.error('Error al verificar código:', error);
+
+    return res.status(500).json({
+      exito: false,
+      mensaje: 'Error al verificar el código.'
+    });
+  }
+});
+
+// 3. Cambiar contraseña después de verificar el código.
+app.post('/api/cambiar-password-directo', async (req, res) => {
+  const email =
+    typeof req.body.email === 'string'
+      ? req.body.email.trim().toLowerCase()
+      : '';
+
+  const codigo =
+    typeof req.body.codigo === 'string'
+      ? req.body.codigo.trim()
+      : '';
+
+  const nuevaPassword = req.body.nuevaPassword;
+
+  if (
+    !email ||
+    !/^\d{6}$/.test(codigo) ||
+    typeof nuevaPassword !== 'string' ||
+    nuevaPassword.length < 6
+  ) {
+    return res.status(400).json({
+      exito: false,
+      mensaje: 'Datos inválidos. Verifica el código y la contraseña.'
+    });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const resultado = await client.query(
+      `SELECT u.id AS usuario_id,
+              r.id AS recuperacion_id,
+              r.codigo_hash,
+              r.expira_en,
+              r.intentos,
+              r.verificado_en
+       FROM usuarios u
+       JOIN recuperacion_password r ON r.usuario_id = u.id
+       WHERE LOWER(u.email) = $1
+       ORDER BY r.creado_en DESC
+       LIMIT 1
+       FOR UPDATE OF r`,
+      [email]
+    );
+
+    if (resultado.rowCount === 0) {
+      await client.query('ROLLBACK');
+
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'La solicitud no es válida. Solicita un nuevo código.'
+      });
+    }
+
+    const registro = resultado.rows[0];
+
+    if (
+      !registro.verificado_en ||
+      new Date(registro.expira_en) <= new Date() ||
+      Number(registro.intentos) >= 5 ||
+      generarHashCodigo(codigo) !== registro.codigo_hash
+    ) {
+      await client.query('ROLLBACK');
+
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'El código no es válido o ha caducado. Verifícalo de nuevo.'
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(nuevaPassword, 10);
+
+    await client.query(
+      `UPDATE usuarios
+       SET password_hash = $1
+       WHERE id = $2`,
+      [passwordHash, registro.usuario_id]
+    );
+
+    // Consumir el código: no podrá volver a utilizarse.
+    await client.query(
+      'DELETE FROM recuperacion_password WHERE usuario_id = $1',
+      [registro.usuario_id]
+    );
+
+    await client.query('COMMIT');
+
+    return res.json({
+      exito: true,
+      mensaje: 'Contraseña actualizada correctamente.'
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+
+    console.error('Error al cambiar contraseña:', error);
+
+    return res.status(500).json({
+      exito: false,
+      mensaje: 'No se pudo actualizar la contraseña.'
+    });
+  } finally {
+    client.release();
   }
 });
 
