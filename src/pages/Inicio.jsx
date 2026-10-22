@@ -1,18 +1,57 @@
+
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+const API_URL = "http://localhost:5000";
 
 function Inicio() {
   const [usuario, setUsuario] = useState(null);
+  const [metricas, setMetricas] = useState(null);
+  const [actividad, setActividad] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState("");
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const usuarioGuardado = localStorage.getItem("usuario");
+
     if (usuarioGuardado) {
-      setUsuario(JSON.parse(usuarioGuardado));
+      try {
+        setUsuario(JSON.parse(usuarioGuardado));
+      } catch {
+        localStorage.removeItem("usuario");
+      }
     }
+
+    cargarTablero();
   }, []);
 
-  const navigate = useNavigate();
+  const cargarTablero = async () => {
+    try {
+      setCargando(true);
+      setError("");
+
+      const respuesta = await fetch(`${API_URL}/api/tablero`);
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok || !datos.exito) {
+        throw new Error(
+          datos.mensaje || "No se pudieron cargar los datos."
+        );
+      }
+
+      setMetricas(datos.metricas);
+      setActividad(datos.actividad || []);
+    } catch (err) {
+      console.error("Error al cargar el tablero:", err);
+      setError(
+        "No se pudieron cargar los datos reales. Verifica que el backend esté funcionando."
+      );
+    } finally {
+      setCargando(false);
+    }
+  };
 
   const cerrarSesion = () => {
     localStorage.removeItem("usuario");
@@ -20,34 +59,61 @@ function Inicio() {
     navigate("/", { replace: true });
   };
 
+  const formatearFecha = (fecha) => {
+    if (!fecha) return "Fecha no disponible";
+
+    const fechaValida = new Date(fecha);
+
+    if (Number.isNaN(fechaValida.getTime())) {
+      return "Fecha no disponible";
+    }
+
+    return fechaValida.toLocaleString("es-MX", {
+      dateStyle: "medium",
+      timeStyle: "short"
+    });
+  };
+
+  const valor = (dato) => {
+    if (cargando) return "...";
+    if (!metricas) return "—";
+    return dato ?? 0;
+  };
+
   return (
     <div className="inicio-container">
-
-      {/* MENÚ LATERAL */}
       <aside className="sidebar">
-
         <div className="sidebar-logo">
           <h2>Bienestar IA</h2>
         </div>
 
         <nav className="sidebar-menu">
-
-          <a href="#" className="menu-item active">
-            <i class="bi bi-house-fill"></i>
+          <Link to="/inicio" className="menu-item active">
+            <i className="bi bi-house-fill"></i>
             <span>Tablero</span>
-          </a>
+          </Link>
+
           <Link to="/chat" className="menu-item">
-            <i class="bi bi-chat-left-dots-fill" style={{ color: '#1ED760' }}></i>
+            <i
+              className="bi bi-chat-left-dots-fill"
+              style={{ color: "#1ED760" }}
+            ></i>
             <span>Chat de ayuda</span>
           </Link>
 
           <Link to="/bienestar" className="menu-item">
-            <i className="bi bi-heart-pulse-fill" style={{ color: '#DE0011' }}></i>
-            <span> Bienestar </span>
+            <i
+              className="bi bi-heart-pulse-fill"
+              style={{ color: "#DE0011" }}
+            ></i>
+            <span>Bienestar</span>
           </Link>
 
           <Link to="/evaluaciones" className="menu-item">
-            <i class="bi bi-card-checklist" style={{ color: '#7740ff ' }}></i>
+            <i
+              className="bi bi-card-checklist"
+              style={{ color: "#7740ff" }}
+            ></i>
             <span>Evaluaciones</span>
           </Link>
 
@@ -55,40 +121,37 @@ function Inicio() {
             <i className="bi bi-people-fill icono-menu"></i>
             <span>Mi perfil</span>
           </Link>
-
         </nav>
 
         <div className="sidebar-bottom">
           {usuario?.rol === "admin" && (
             <Link to="/configuracion" className="menu-item">
-              <i class="bi bi-gear-fill"></i> <span> Configuración </span>
+              <i className="bi bi-gear-fill"></i>
+              <span>Configuración</span>
             </Link>
           )}
-
 
           <button
             type="button"
             className="menu-item logout"
             onClick={cerrarSesion}
           >
-            <i className="bi bi-door-closed-fill" style={{ color: '#DE0011' }}></i>
+            <i
+              className="bi bi-door-closed-fill"
+              style={{ color: "#DE0011" }}
+            ></i>
             <span>Cerrar sesión</span>
           </button>
-
-
         </div>
-
       </aside>
 
-
-      {/* CONTENIDO PRINCIPAL - TABLERO EJECUTIVO */}
       <main className="main-content">
-
-        {/* TOP BAR */}
         <div className="top-bar">
           <div>
             <h1>Tablero Ejecutivo</h1>
-            <p className="subtitle">Resumen general del estado de bienestar organizacional</p>
+            <p className="subtitle">
+              Resumen general del estado de bienestar organizacional
+            </p>
           </div>
 
           <div className="user">
@@ -96,88 +159,136 @@ function Inicio() {
           </div>
         </div>
 
-        {/* METRICAS PRINCIPALES (KPIS) */}
-        <section className="kpi-grid">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            marginBottom: "16px"
+          }}
+        >
+          <button
+            type="button"
+            onClick={cargarTablero}
+            disabled={cargando}
+            className="btn btn-outline-primary"
+          >
+            <i className="bi bi-arrow-clockwise"></i>{" "}
+            {cargando ? "Actualizando..." : "Actualizar tablero"}
+          </button>
+        </div>
 
+        {error && (
+          <div className="alert alert-danger" role="alert">
+            {error}
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-danger ms-3"
+              onClick={cargarTablero}
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
+
+        <section className="kpi-grid">
           <div className="kpi-card">
-            <div className="kpi-icon icon-blue">📊</div>
+            <div className="kpi-icon icon-blue">👥</div>
             <div className="kpi-data">
-              <span className="kpi-title">Índice del Bienestar</span>
-              <h3 className="kpi-value">84%</h3>
-              <span className="kpi-trend positive">↑ +3.2% este mes</span>
+              <span className="kpi-title">Usuarios registrados</span>
+              <h3 className="kpi-value">
+                {valor(metricas?.usuariosRegistrados)}
+              </h3>
+              <span className="kpi-trend neutral">
+                Total de cuentas registradas
+              </span>
             </div>
           </div>
 
           <div className="kpi-card">
             <div className="kpi-icon icon-green">📋</div>
             <div className="kpi-data">
-              <span className="kpi-title">Evaluaciones Completadas</span>
-              <h3 className="kpi-value">128</h3>
-              <span className="kpi-trend positive">85% de participación</span>
+              <span className="kpi-title">Encuestas creadas</span>
+              <h3 className="kpi-value">
+                {valor(metricas?.encuestas)}
+              </h3>
+              <span className="kpi-trend neutral">
+                Total de encuestas registradas
+              </span>
             </div>
           </div>
 
           <div className="kpi-card">
-            <div className="kpi-icon icon-orange">⚡</div>
+            <div className="kpi-icon icon-orange">📊</div>
             <div className="kpi-data">
-              <span className="kpi-title">Nivel de Estrés Promedio</span>
-              <h3 className="kpi-value">Bajo</h3>
-              <span className="kpi-trend neutral">Estable vs mes anterior</span>
+              <span className="kpi-title">Participaciones</span>
+              <h3 className="kpi-value">
+                {valor(metricas?.participaciones)}
+              </h3>
+              <span className="kpi-trend neutral">
+                Registros de respuestas recibidos
+              </span>
             </div>
           </div>
 
           <div className="kpi-card">
-            <div className="kpi-icon icon-purple">👤</div>
+            <div className="kpi-icon icon-purple">💡</div>
             <div className="kpi-data">
-              <span className="kpi-title">Usuarios Activos</span>
-              <h3 className="kpi-value">45</h3>
-              <span className="kpi-trend positive">↑ 5 nuevos esta semana</span>
+              <span className="kpi-title">Propuestas recibidas</span>
+              <h3 className="kpi-value">
+                {valor(metricas?.propuestas)}
+              </h3>
+              <span className="kpi-trend neutral">
+                Total de propuestas registradas
+              </span>
             </div>
           </div>
-
         </section>
 
-
-        {/* SECCIÓN DOS COLUMNAS: ACCESOS RÁPIDOS Y ACTIVIDAD RECIENTE */}
         <div className="dashboard-grid">
-
-
-          {/* ACTIVIDAD Y ALERTAS RECIENTES */}
           <section className="dashboard-card">
-            <h3><i class="bi bi-bell-fill" style={{ color: '#FDD55B' }}></i> Actividad y Novedades</h3>
-            <p className="card-description">Eventos recientes en la plataforma</p>
+            <h3>
+              <i
+                className="bi bi-bell-fill"
+                style={{ color: "#FDD55B" }}
+              ></i>{" "}
+              Actividad y Novedades
+            </h3>
 
-            <ul className="activity-list">
-              <li className="activity-item">
-                <span className="activity-badge badge-green">Novedad</span>
-                <div>
-                  <p>Nueva evaluación del clima organizacional disponible.</p>
+            <p className="card-description">
+              Encuestas y propuestas recientes registradas en la plataforma
+            </p>
 
-                </div>
-              </li>
+            {cargando ? (
+              <p>Cargando actividad...</p>
+            ) : actividad.length === 0 ? (
+              <p>No hay actividad registrada todavía.</p>
+            ) : (
+              <ul className="activity-list">
+                {actividad.map((item) => (
+                  <li className="activity-item" key={item.id}>
+                    <span
+                      className={`activity-badge ${
+                        item.tipo === "Encuesta"
+                          ? "badge-green"
+                          : "badge-blue"
+                      }`}
+                    >
+                      {item.tipo}
+                    </span>
 
-              <li className="activity-item">
-                <span className="activity-badge badge-blue">Recomendación</span>
-                <div>
-                  <p>Revisa tu reporte mensual de equilibrio laboral.</p>
-
-                </div>
-              </li>
-
-              <li className="activity-item">
-                <span className="activity-badge badge-orange">Recordatorio</span>
-                <div>
-                  <p>Próxima sesión de pausas activas grupales.</p>
-
-                </div>
-              </li>
-            </ul>
+                    <div>
+                      <p>{item.titulo}</p>
+                      <small>{item.descripcion}</small>
+                      <br />
+                      <small>{formatearFecha(item.fecha)}</small>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
-
         </div>
-
       </main>
-
     </div>
   );
 }

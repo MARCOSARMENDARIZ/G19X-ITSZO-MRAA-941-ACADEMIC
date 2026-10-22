@@ -1768,6 +1768,103 @@ app.post('/api/cambiar-password-directo', async (req, res) => {
   }
 });
 
+app.get('/api/tablero', async (req, res) => {
+  try {
+    const [
+      usuariosResult,
+      encuestasResult,
+      participacionesResult,
+      propuestasResult,
+      encuestasRecientesResult,
+      propuestasRecientesResult
+    ] = await Promise.all([
+      pool.query(`
+        SELECT COUNT(*)::INT AS total
+        FROM usuarios
+      `),
+
+      pool.query(`
+        SELECT COUNT(*)::INT AS total
+        FROM encuestas
+      `),
+
+      pool.query(`
+        SELECT COUNT(*)::INT AS total
+        FROM respuestas_encuesta
+      `),
+
+      pool.query(`
+        SELECT COUNT(*)::INT AS total
+        FROM propuestas
+      `),
+
+      pool.query(`
+        SELECT id, titulo, fecha_creacion AS fecha
+        FROM encuestas
+        ORDER BY fecha_creacion DESC NULLS LAST
+        LIMIT 5
+      `),
+
+      pool.query(`
+        SELECT id, titulo, fecha
+        FROM propuestas
+        ORDER BY fecha DESC NULLS LAST
+        LIMIT 5
+      `)
+    ]);
+
+    const actividadEncuestas = encuestasRecientesResult.rows.map(
+      (encuesta) => ({
+        id: `encuesta-${encuesta.id}`,
+        tipo: 'Encuesta',
+        titulo: encuesta.titulo,
+        descripcion: 'Encuesta registrada en la plataforma',
+        fecha: encuesta.fecha
+      })
+    );
+
+    const actividadPropuestas = propuestasRecientesResult.rows.map(
+      (propuesta) => ({
+        id: `propuesta-${propuesta.id}`,
+        tipo: 'Propuesta',
+        titulo: propuesta.titulo,
+        descripcion: 'Propuesta registrada en la plataforma',
+        fecha: propuesta.fecha
+      })
+    );
+
+    const actividad = [
+      ...actividadEncuestas,
+      ...actividadPropuestas
+    ]
+      .sort((a, b) => {
+        const fechaA = a.fecha ? new Date(a.fecha).getTime() : 0;
+        const fechaB = b.fecha ? new Date(b.fecha).getTime() : 0;
+        return fechaB - fechaA;
+      })
+      .slice(0, 5);
+
+    res.json({
+      exito: true,
+      metricas: {
+        usuariosRegistrados: usuariosResult.rows[0].total,
+        encuestas: encuestasResult.rows[0].total,
+        participaciones: participacionesResult.rows[0].total,
+        propuestas: propuestasResult.rows[0].total
+      },
+      actividad
+    });
+  } catch (error) {
+    console.error('Error al cargar el tablero:', error);
+
+    res.status(500).json({
+      exito: false,
+      mensaje: 'No se pudieron consultar los datos del tablero'
+    });
+  }
+});
+
+
 // =========================================================================
 // INICIAR SERVIDOR
 // =========================================================================
