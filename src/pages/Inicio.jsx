@@ -191,18 +191,24 @@ function Inicio() {
         )}
 
         <section className="kpi-grid">
+          {usuario?.rol === "admin" && (
           <div className="kpi-card">
-            <div className="kpi-icon icon-blue">👥</div>
-            <div className="kpi-data">
-              <span className="kpi-title">Usuarios registrados</span>
-              <h3 className="kpi-value">
-                {valor(metricas?.usuariosRegistrados)}
-              </h3>
-              <span className="kpi-trend neutral">
-                Total de cuentas registradas
-              </span>
-            </div>
+            
+              <>
+                <div className="kpi-icon icon-blue">👥</div>
+                <div className="kpi-data">
+                  <span className="kpi-title">Usuarios registrados</span>
+                  <h3 className="kpi-value">
+                    {valor(metricas?.usuariosRegistrados)}
+                  </h3>
+                  <span className="kpi-trend neutral">
+                    Total de cuentas registradas
+                  </span>
+                </div>
+              </>
+           
           </div>
+             )}
 
           <div className="kpi-card">
             <div className="kpi-icon icon-green">📋</div>
@@ -267,11 +273,10 @@ function Inicio() {
                 {actividad.map((item) => (
                   <li className="activity-item" key={item.id}>
                     <span
-                      className={`activity-badge ${
-                        item.tipo === "Encuesta"
+                      className={`activity-badge ${item.tipo === "Encuesta"
                           ? "badge-green"
                           : "badge-blue"
-                      }`}
+                        }`}
                     >
                       {item.tipo}
                     </span>

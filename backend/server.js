@@ -1,13 +1,17 @@
-
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+const fs = require('fs');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+
+require('dotenv').config({
+  path: path.join(__dirname, '.env')
+});
 
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const multer = require('multer');
 
 
 console.log(
@@ -115,30 +119,31 @@ app.get('/api/perfil/:id', async (req, res) => {
          p.telefono,
          COALESCE(p.puesto, u.rol) AS puesto,
          p.departamento,
-         p.fecha_ingreso
+         p.fecha_ingreso,
+         p.foto_url
        FROM usuarios u
        LEFT JOIN perfiles p ON u.id = p.usuario_id
        WHERE u.id = $1`,
       [id]
     );
 
-    if (result.rows.length > 0) {
-      return res.json({
-        exito: true,
-        perfil: result.rows[0]
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        exito: false,
+        mensaje: 'Usuario no encontrado'
       });
     }
 
-    return res.status(404).json({
-      exito: false,
-      mensaje: 'Usuario no encontrado'
+    return res.json({
+      exito: true,
+      perfil: result.rows[0]
     });
   } catch (error) {
     console.error('Error al obtener el perfil:', error);
 
     return res.status(500).json({
       exito: false,
-      mensaje: 'Error en el servidor'
+      mensaje: 'Error en el servidor al obtener el perfil'
     });
   }
 });
@@ -1862,6 +1867,111 @@ app.get('/api/tablero', async (req, res) => {
       mensaje: 'No se pudieron consultar los datos del tablero'
     });
   }
+});
+
+const carpetaUploads = path.join(__dirname, 'uploads');
+
+fs.mkdirSync(carpetaUploads, { recursive: true });
+
+app.use('/uploads', express.static(carpetaUploads));
+
+const almacenamientoFotos = multer.diskStorage({
+  destination: (req, file, callback) => {
+    callback(null, carpetaUploads);
+  },
+
+  filename: (req, file, callback) => {
+    const extensionesPermitidas = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp'
+    };
+
+    const extension = extensionesPermitidas[file.mimetype];
+
+    if (!extension) {
+      return callback(new Error('Formato de imagen no permitido.'));
+    }
+
+    const nombreArchivo = `${crypto.randomBytes(16).toString('hex')}${extension}`;
+
+    callback(null, nombreArchivo);
+  }
+});
+
+const subirFoto = multer({
+  storage: almacenamientoFotos,
+  limits: {
+    fileSize: 5 * 1024 * 1024
+  },
+  fileFilter: (req, file, callback) => {
+    const formatosPermitidos = [
+      'image/jpeg',
+      'image/png',
+      'image/webp'
+    ];
+
+    if (!formatosPermitidos.includes(file.mimetype)) {
+      return callback(
+        new Error('Solo se permiten imágenes JPG, PNG o WEBP.')
+      );
+    }
+
+    callback(null, true);
+  }
+});
+
+app.post('/api/perfil/:id/foto', (req, res) => {
+  subirFoto.single('foto')(req, res, async (error) => {
+    if (error) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: error.message
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'Selecciona una imagen.'
+      });
+    }
+
+    const { id } = req.params;
+    const fotoUrl = `/uploads/${req.file.filename}`;
+
+    try {
+      const resultado = await pool.query(
+        `UPDATE perfiles
+         SET foto_url = $1
+         WHERE usuario_id = $2
+         RETURNING foto_url`,
+        [fotoUrl, id]
+      );
+
+      if (resultado.rowCount === 0) {
+        fs.unlink(req.file.path, () => {});
+
+        return res.status(404).json({
+          exito: false,
+          mensaje: 'No se encontró el perfil del usuario.'
+        });
+      }
+
+      return res.json({
+        exito: true,
+        foto_url: resultado.rows[0].foto_url
+      });
+    } catch (error) {
+      fs.unlink(req.file.path, () => {});
+      console.error('Error al guardar la foto:', error);
+
+      return res.status(500).json({
+        exito: false,
+        mensaje: 'No se pudo guardar la foto.'
+      });
+    }
+  });
 });
 
 
