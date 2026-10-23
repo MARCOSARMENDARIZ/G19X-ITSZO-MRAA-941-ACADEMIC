@@ -1594,6 +1594,8 @@ main > div p {
 }
 
 
+
+
 /* =========================================================
    FORMULARIO GENERAL
    ========================================================= */
@@ -2338,5 +2340,66 @@ form button:active {
 
   .chat-input-form button {
     padding: 10px;
+  }
+}
+
+
+/* ENCABEZADO DE IDEAS Y PROPUESTAS */
+
+.propuestas-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 15px 20px;
+  margin-bottom: 22px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+/* BOTÓN REGRESAR */
+
+.propuestas-btn-volver {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  color: #2563eb;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.propuestas-btn-volver:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+/* TÍTULO */
+
+.propuestas-titulo {
+  margin: 0;
+  padding: 0;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #2563eb;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 650px) {
+  .propuestas-header {
+    gap: 8px;
+    padding: 12px 14px;
+  }
+
+  .propuestas-titulo {
+    font-size: 19px;
   }
 }

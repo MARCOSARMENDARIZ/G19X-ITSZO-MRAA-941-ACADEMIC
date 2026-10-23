@@ -18,45 +18,56 @@ function Login() {
   const navigate = useNavigate()
 
   // INICIAR SESIÓN
-  const iniciarSesion = async (e) => {
-    e.preventDefault()
+ 
+const iniciarSesion = async (e) => {
+  e.preventDefault();
 
-    if (!usuario.trim() || !password) {
-      alert('Completa todos los campos')
-      return
-    }
+  if (!usuario.trim() || !password) {
+    alert('Completa todos los campos');
+    return;
+  }
 
-    setCargando(true)
+  setCargando(true);
+
+  try {
+    const respuesta = await fetch('http://localhost:5000/api/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ usuario, password })
+    });
+
+    const texto = await respuesta.text();
+    let data = {};
 
     try {
-      const respuesta = await fetch('http://localhost:5000/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ usuario, password })
-      })
-
-      const texto = await respuesta.text()
-      let data = {}
-
-      try {
-        data = JSON.parse(texto)
-      } catch {
-        console.error('La respuesta del servidor no es JSON')
-      }
-
-      if (respuesta.ok && data.exito) {
-        localStorage.setItem('usuario', JSON.stringify(data.usuario))
-        navigate('/inicio')
-      } else {
-        alert(data.mensaje || 'Usuario o contraseña incorrectos')
-      }
-    } catch (error) {
-      console.error('Error al iniciar sesión:', error)
-      alert('No se pudo conectar con el servidor')
-    } finally {
-      setCargando(false)
+      data = JSON.parse(texto);
+    } catch {
+      console.error('La respuesta del servidor no es JSON:', texto);
     }
+
+    if (respuesta.ok && data.exito) {
+      if (!data.token) {
+        alert('El servidor no devolvió el token de autenticación');
+        return;
+      }
+
+      localStorage.setItem('usuario', JSON.stringify(data.usuario));
+      localStorage.setItem('token', data.token);
+
+      navigate('/inicio', { replace: true });
+    } else {
+      alert(data.mensaje || 'Usuario o contraseña incorrectos');
+    }
+  } catch (error) {
+    console.error('Error al iniciar sesión:', error);
+    alert('No se pudo conectar con el servidor');
+  } finally {
+    setCargando(false);
   }
+};
+
 
   // PASO 1: SOLICITAR CÓDIGO POR CORREO
   const handleVerificarEmail = async (e) => {

@@ -12,6 +12,7 @@ const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
+const jwt = require('jsonwebtoken');
 
 
 console.log(
@@ -24,6 +25,115 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('Falta configurar JWT_SECRET en el archivo .env');
+}
+
+function autenticarToken(req, res, next) {
+  const encabezado = req.headers.authorization;
+
+  if (!encabezado || !encabezado.startsWith('Bearer ')) {
+    return res.status(401).json({
+      exito: false,
+      mensaje: 'Debes iniciar sesión para acceder a este recurso.'
+    });
+  }
+
+  const token = encabezado.slice(7).trim();
+
+  try {
+    const datos = jwt.verify(token, JWT_SECRET);
+
+    if (!datos.id || !datos.rol) {
+      return res.status(401).json({
+        exito: false,
+        mensaje: 'El token no contiene los datos necesarios.'
+      });
+    }
+
+    req.usuario = {
+      id: datos.id,
+      rol: datos.rol
+    };
+
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      exito: false,
+      mensaje: 'La sesión no es válida o ha caducado.'
+    });
+  }
+}
+
+function soloAdministrador(req, res, next) {
+  const rol = String(req.usuario?.rol || '').toLowerCase();
+
+  if (!['admin', 'administrador'].includes(rol)) {
+    return res.status(403).json({
+      exito: false,
+      mensaje: 'No tienes permisos de administrador.'
+    });
+  }
+
+  next();
+}
+
+
+if (!JWT_SECRET) {
+  throw new Error('Falta configurar JWT_SECRET en el archivo .env');
+}
+
+function autenticarToken(req, res, next) {
+  const encabezado = req.headers.authorization;
+
+  if (!encabezado || !encabezado.startsWith('Bearer ')) {
+    return res.status(401).json({
+      exito: false,
+      mensaje: 'Debes iniciar sesión para acceder a este recurso.'
+    });
+  }
+
+  const token = encabezado.slice(7).trim();
+
+  try {
+    const datos = jwt.verify(token, JWT_SECRET);
+
+    if (!datos.id || !datos.rol) {
+      return res.status(401).json({
+        exito: false,
+        mensaje: 'El token no contiene los datos necesarios.'
+      });
+    }
+
+    req.usuario = {
+      id: datos.id,
+      rol: datos.rol
+    };
+
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      exito: false,
+      mensaje: 'La sesión no es válida o ha caducado.'
+    });
+  }
+}
+
+function soloAdministrador(req, res, next) {
+  const rol = String(req.usuario?.rol || '').trim().toLowerCase();
+
+  if (rol !== 'admin' && rol !== 'administrador') {
+    return res.status(403).json({
+      exito: false,
+      mensaje: 'Acceso exclusivo para administradores'
+    });
+  }
+
+  next();
+}
+
 const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
@@ -31,7 +141,6 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT
 });
-
 
 
 const transporter = nodemailer.createTransport({
@@ -60,6 +169,7 @@ app.get('/', (req, res) => {
 // =========================================================================
 // RUTAS DE USUARIOS Y AUTENTICACIÓN
 // =========================================================================
+
 
 app.post('/api/login', async (req, res) => {
   const { usuario, password } = req.body;
@@ -91,11 +201,24 @@ app.post('/api/login', async (req, res) => {
 
     delete user.password_hash;
 
+    const token = jwt.sign(
+      {
+        id: user.id,
+        rol: user.rol
+      },
+      JWT_SECRET,
+      {
+        expiresIn: process.env.JWT_EXPIRES_IN || '2h'
+      }
+    );
+
     return res.json({
       exito: true,
       mensaje: 'Inicio de sesión exitoso',
+      token,
       usuario: user
     });
+
   } catch (error) {
     console.error('Error durante el login:', error);
 
@@ -105,6 +228,7 @@ app.post('/api/login', async (req, res) => {
     });
   }
 });
+
 
 app.get('/api/perfil/:id', async (req, res) => {
   const { id } = req.params;
@@ -148,7 +272,7 @@ app.get('/api/perfil/:id', async (req, res) => {
   }
 });
 
-app.get('/api/usuarios', async (req, res) => {
+app.get('/api/usuarios', autenticarToken, soloAdministrador, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT
@@ -177,7 +301,7 @@ app.get('/api/usuarios', async (req, res) => {
   }
 });
 
-app.post('/api/usuarios/registrar', async (req, res) => {
+app.post('/api/usuarios/registrar', autenticarToken, soloAdministrador, async (req, res) => {
   const {
     nombre,
     email,
@@ -249,7 +373,7 @@ app.post('/api/usuarios/registrar', async (req, res) => {
   }
 });
 
-app.delete('/api/usuarios/:id', async (req, res) => {
+app.delete('/api/usuarios/:id', autenticarToken, soloAdministrador, async (req, res) => {
   const { id } = req.params;
   const client = await pool.connect();
 

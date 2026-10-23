@@ -40,7 +40,7 @@ function Bienestar() {
 
       if (respuesta.ok && data.exito) {
         alert("¡Propuesta enviada correctamente!");
-        
+
         // Agregar la nueva propuesta al historial local
         if (data.propuesta) {
           setMisPropuestas((prev) => [data.propuesta, ...prev]);
@@ -62,53 +62,21 @@ function Bienestar() {
   return (
     <div className="inicio-container">
       {/* MENÚ LATERAL */}
-      <aside className="sidebar">
-        <div className="sidebar-logo">
-          <h2>Bienestar IA</h2>
-        </div>
 
-        <nav className="sidebar-menu">
-          <Link to="/inicio" className="menu-item">
-            🏠 Inicio
-          </Link>
-          <Link to="/bienestar" className="menu-item active">
-            ❤️ Bienestar
-          </Link>
-          <a href="#" className="menu-item">
-            📋 Evaluaciones
-          </a>
-          <Link to="/perfil" className="menu-item">
-            👤 Mi perfil
-          </Link>
-        </nav>
 
-        <div className="sidebar-bottom">
-          {usuario?.rol === "admin" && (
-            <Link to="/configuracion" className="menu-item">
-              ⚙️ Configuración
-            </Link>
-          )}
-          <a
-            href="/"
-            className="menu-item logout"
-            onClick={() => localStorage.removeItem("usuario")}
-          >
-            🚪 Cerrar sesión
-          </a>
-        </div>
-      </aside>
 
       {/* CONTENIDO PRINCIPAL */}
       <main className="main-content">
-        <div className="top-bar">
-          <h1>Bienestar</h1>
-          <div className="user">
-            👤 {usuario ? usuario.nombre : "Cargando..."}
-          </div>
-        </div>
+    
+<div className="propuestas-header">
+  <Link to="/inicio" className="propuestas-btn-volver">
+    <i className="bi bi-arrow-left"></i>
+  </Link>
+
+  <h1 className="propuestas-titulo">Ideas y Propuestas</h1>
+</div>
 
         <section className="welcome">
-          <h2>Ideas y Propuestas 💡</h2>
 
           <form onSubmit={enviarPropuesta} className="form-propuesta">
             <div className="form-grupo">
