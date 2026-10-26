@@ -230,7 +230,24 @@ app.post('/api/login', async (req, res) => {
 });
 
 
-app.get('/api/perfil/:id', async (req, res) => {
+app.get('/api/perfil/:id', autenticarToken, async (req, res) => {
+  const usuarioSolicitado = Number(req.params.id);
+  const usuarioAutenticado = Number(req.usuario.id);
+
+  const esAdmin = ['admin', 'administrador'].includes(
+    String(req.usuario.rol).toLowerCase()
+  );
+
+  if (
+    usuarioSolicitado !== usuarioAutenticado &&
+    !esAdmin
+  ) {
+    return res.status(403).json({
+      exito: false,
+      mensaje: 'No tienes permiso para consultar este perfil.'
+    });
+  }
+
   const { id } = req.params;
 
   try {
@@ -527,7 +544,7 @@ app.get('/api/encuestas/:id', async (req, res) => {
 
 // 3. Crear una encuesta con fecha límite, preguntas y opciones.
 
-app.post('/api/encuestas', async (req, res) => {
+app.post('/api/encuestas', autenticarToken, soloAdministrador, async (req, res) => {
   const {
     titulo,
     descripcion,
@@ -1178,7 +1195,7 @@ INSTRUCCIONES:
 // ANALIZAR RESULTADOS DE ENCUESTA CON CLOUDFLARE WORKERS AI
 // =========================================================================
 
-app.get('/api/encuestas/:id/analizar-ia', async (req, res) => {
+app.get('/api/encuestas/:id/analizar-ia', autenticarToken, soloAdministrador, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -2045,7 +2062,23 @@ const subirFoto = multer({
   }
 });
 
-app.post('/api/perfil/:id/foto', (req, res) => {
+app.post('/api/perfil/:id/foto',autenticarToken,(req, res) => {
+    const usuarioSolicitado = Number(req.params.id);
+    const usuarioAutenticado = Number(req.usuario.id);
+
+    const esAdmin = ['admin', 'administrador'].includes(
+      String(req.usuario.rol).toLowerCase()
+    );
+
+    if (
+      usuarioSolicitado !== usuarioAutenticado &&
+      !esAdmin
+    ) {
+      return res.status(403).json({
+        exito: false,
+        mensaje: 'No puedes modificar este perfil.'
+      });
+    }
   subirFoto.single('foto')(req, res, async (error) => {
     if (error) {
       return res.status(400).json({

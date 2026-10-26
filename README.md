@@ -229,10 +229,6 @@ La revisión del código actual identifica trabajo pendiente:
 7. Revocar cualquier token expuesto y actualizar los secretos locales.
 8. Revisar las dependencias y probar el esquema en una base de datos de desarrollo antes de usarlo con datos existentes.
 
-## Documentación del proyecto
-
-- [PRD](docs/PRD.md): propósito, usuarios, alcance y requisitos del producto.
-- [MVP](docs/MVP.md): alcance mínimo, criterios de aceptación y trabajo pendiente.
 
 ## Licencia
 
