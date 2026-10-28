@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { apiFetch } from "../api";
 
 const MENSAJE_INICIAL = {
   remitente: "bot",
@@ -119,21 +120,21 @@ function Chatbot() {
       prev.map((chat) =>
         chat.id === idChat
           ? {
-              ...chat,
-              titulo:
-                chat.titulo === "Nuevo chat"
-                  ? mensajeUsuario.slice(0, 35) +
-                    (mensajeUsuario.length > 35 ? "..." : "")
-                  : chat.titulo,
-              mensajes: nuevosMensajes,
-              fecha: new Date().toISOString()
-            }
+            ...chat,
+            titulo:
+              chat.titulo === "Nuevo chat"
+                ? mensajeUsuario.slice(0, 35) +
+                (mensajeUsuario.length > 35 ? "..." : "")
+                : chat.titulo,
+            mensajes: nuevosMensajes,
+            fecha: new Date().toISOString()
+          }
           : chat
       )
     );
 
     try {
-      const respuesta = await fetch("http://localhost:5000/api/chatbot", {
+      const respuesta = await apiFetch("/api/chatbot", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -155,13 +156,13 @@ function Chatbot() {
         prev.map((chat) =>
           chat.id === idChat
             ? {
-                ...chat,
-                mensajes: [
-                  ...chat.mensajes,
-                  { remitente: "bot", texto: textoRespuesta }
-                ],
-                fecha: new Date().toISOString()
-              }
+              ...chat,
+              mensajes: [
+                ...chat.mensajes,
+                { remitente: "bot", texto: textoRespuesta }
+              ],
+              fecha: new Date().toISOString()
+            }
             : chat
         )
       );
@@ -170,15 +171,15 @@ function Chatbot() {
         prev.map((chat) =>
           chat.id === idChat
             ? {
-                ...chat,
-                mensajes: [
-                  ...chat.mensajes,
-                  {
-                    remitente: "bot",
-                    texto: "No se pudo conectar con el servidor del chatbot."
-                  }
-                ]
-              }
+              ...chat,
+              mensajes: [
+                ...chat.mensajes,
+                {
+                  remitente: "bot",
+                  texto: "No se pudo conectar con el servidor del chatbot."
+                }
+              ]
+            }
             : chat
         )
       );
@@ -205,9 +206,8 @@ function Chatbot() {
           {chats.map((chat) => (
             <div
               key={chat.id}
-              className={`historial-item ${
-                chat.id === chatActivoId ? "historial-activo" : ""
-              }`}
+              className={`historial-item ${chat.id === chatActivoId ? "historial-activo" : ""
+                }`}
             >
               <button
                 type="button"
@@ -247,11 +247,10 @@ function Chatbot() {
           {mensajes.map((msg, index) => (
             <div
               key={`${chatActivoId}-${index}`}
-              className={`mensaje ${
-                msg.remitente === "usuario"
+              className={`mensaje ${msg.remitente === "usuario"
                   ? "mensaje-usuario"
                   : "mensaje-bot"
-              }`}
+                }`}
             >
               {msg.texto}
             </div>

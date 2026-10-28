@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { apiFetch } from "../api";
 
 function Encuestas({ usuario }) {
   const [encuestas, setEncuestas] = useState([]);
@@ -183,7 +184,7 @@ function Encuestas({ usuario }) {
       }
 
       if (esAdmin) {
-        const resIA = await fetch(
+        const resIA = await apiFetch(
           `${API_URL}/${encuesta.id}/analizar-ia`
         );
 
@@ -328,11 +329,11 @@ function Encuestas({ usuario }) {
       prev.map((pregunta, i) =>
         i === pIndex
           ? {
-              ...pregunta,
-              opciones: pregunta.opciones.map((opcion, j) =>
-                j === oIndex ? value : opcion
-              )
-            }
+            ...pregunta,
+            opciones: pregunta.opciones.map((opcion, j) =>
+              j === oIndex ? value : opcion
+            )
+          }
           : pregunta
       )
     );
@@ -407,7 +408,7 @@ function Encuestas({ usuario }) {
     setGuardandoEncuesta(true);
 
     try {
-      const res = await fetch(API_URL, {
+      const res = await apiFetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -528,9 +529,8 @@ function Encuestas({ usuario }) {
                 <div key={enc.id} className="encuesta-card">
                   <div className="encuesta-card-header">
                     <span
-                      className={`status-pill ${
-                        vencida ? "vencida" : (enc.estado || "").toLowerCase()
-                      }`}
+                      className={`status-pill ${vencida ? "vencida" : (enc.estado || "").toLowerCase()
+                        }`}
                     >
                       {vencida ? "Vencida" : enc.estado}
                     </span>
@@ -544,9 +544,8 @@ function Encuestas({ usuario }) {
                   <p className="encuesta-desc">{enc.descripcion}</p>
 
                   <div
-                    className={`encuesta-temporizador ${
-                      vencida ? "vencido" : ""
-                    }`}
+                    className={`encuesta-temporizador ${vencida ? "vencido" : ""
+                      }`}
                   >
                     <span>{vencida ? "🔒" : "⏳"}</span>
                     <div>
@@ -788,9 +787,8 @@ function Encuestas({ usuario }) {
 
               {encuestaSeleccionada.fecha_cierre && (
                 <div
-                  className={`encuesta-temporizador ${
-                    encuestaVencida(encuestaSeleccionada) ? "vencido" : ""
-                  }`}
+                  className={`encuesta-temporizador ${encuestaVencida(encuestaSeleccionada) ? "vencido" : ""
+                    }`}
                 >
                   <span>
                     {encuestaVencida(encuestaSeleccionada) ? "🔒" : "⏳"}
@@ -823,11 +821,10 @@ function Encuestas({ usuario }) {
                           key={num}
                           type="button"
                           disabled={encuestaVencida(encuestaSeleccionada)}
-                          className={`btn-rating ${
-                            respuestasForm[preg.id]?.valor_numero === num
+                          className={`btn-rating ${respuestasForm[preg.id]?.valor_numero === num
                               ? "activo"
                               : ""
-                          }`}
+                            }`}
                           onClick={() =>
                             handleRespuestaChange(
                               preg.id,

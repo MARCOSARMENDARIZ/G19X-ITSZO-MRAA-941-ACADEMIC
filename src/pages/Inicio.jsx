@@ -1,6 +1,6 @@
-
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { apiFetch } from "../api";
 
 const API_URL = "http://localhost:5000";
 
@@ -32,7 +32,7 @@ function Inicio() {
       setCargando(true);
       setError("");
 
-      const respuesta = await fetch(`${API_URL}/api/tablero`);
+      const respuesta = await apiFetch(`${API_URL}/api/tablero`);
       const datos = await respuesta.json();
 
       if (!respuesta.ok || !datos.exito) {
@@ -55,6 +55,7 @@ function Inicio() {
 
   const cerrarSesion = () => {
     localStorage.removeItem("usuario");
+    localStorage.removeItem("token");
     setUsuario(null);
     navigate("/", { replace: true });
   };
@@ -192,23 +193,19 @@ function Inicio() {
 
         <section className="kpi-grid">
           {usuario?.rol === "admin" && (
-          <div className="kpi-card">
-            
-              <>
-                <div className="kpi-icon icon-blue">👥</div>
-                <div className="kpi-data">
-                  <span className="kpi-title">Usuarios registrados</span>
-                  <h3 className="kpi-value">
-                    {valor(metricas?.usuariosRegistrados)}
-                  </h3>
-                  <span className="kpi-trend neutral">
-                    Total de cuentas registradas
-                  </span>
-                </div>
-              </>
-           
-          </div>
-             )}
+            <div className="kpi-card">
+              <div className="kpi-icon icon-blue">👥</div>
+              <div className="kpi-data">
+                <span className="kpi-title">Usuarios registrados</span>
+                <h3 className="kpi-value">
+                  {valor(metricas?.usuariosRegistrados)}
+                </h3>
+                <span className="kpi-trend neutral">
+                  Total de cuentas registradas
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="kpi-card">
             <div className="kpi-icon icon-green">📋</div>
@@ -273,10 +270,11 @@ function Inicio() {
                 {actividad.map((item) => (
                   <li className="activity-item" key={item.id}>
                     <span
-                      className={`activity-badge ${item.tipo === "Encuesta"
+                      className={`activity-badge ${
+                        item.tipo === "Encuesta"
                           ? "badge-green"
                           : "badge-blue"
-                        }`}
+                      }`}
                     >
                       {item.tipo}
                     </span>

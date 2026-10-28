@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { apiFetch } from "../api";
 
 function Bienestar() {
   const [usuario, setUsuario] = useState(null);
@@ -26,11 +27,10 @@ function Bienestar() {
     setEnviando(true);
 
     try {
-      const respuesta = await fetch("http://localhost:5000/api/propuestas", {
+      const respuesta = await apiFetch("/api/propuestas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          usuario_id: usuario ? usuario.id : null,
           titulo: titulo.trim(),
           descripcion: descripcion.trim(),
         }),
@@ -41,7 +41,6 @@ function Bienestar() {
       if (respuesta.ok && data.exito) {
         alert("¡Propuesta enviada correctamente!");
 
-        // Agregar la nueva propuesta al historial local
         if (data.propuesta) {
           setMisPropuestas((prev) => [data.propuesta, ...prev]);
         }
@@ -61,23 +60,16 @@ function Bienestar() {
 
   return (
     <div className="inicio-container">
-      {/* MENÚ LATERAL */}
-
-
-
-      {/* CONTENIDO PRINCIPAL */}
       <main className="main-content">
-    
-<div className="propuestas-header">
-  <Link to="/inicio" className="propuestas-btn-volver">
-    <i className="bi bi-arrow-left"></i>
-  </Link>
+        <div className="propuestas-header">
+          <Link to="/inicio" className="propuestas-btn-volver">
+            <i className="bi bi-arrow-left"></i>
+          </Link>
 
-  <h1 className="propuestas-titulo">Ideas y Propuestas</h1>
-</div>
+          <h1 className="propuestas-titulo">Ideas y Propuestas</h1>
+        </div>
 
         <section className="welcome">
-
           <form onSubmit={enviarPropuesta} className="form-propuesta">
             <div className="form-grupo">
               <label htmlFor="titulo">Título de la propuesta *</label>
@@ -117,7 +109,6 @@ function Bienestar() {
           </form>
         </section>
 
-        {/* HISTORIAL RECIENTE DE ENVIOS EN ESTA SESIÓN */}
         {misPropuestas.length > 0 && (
           <section className="welcome" style={{ marginTop: "20px" }}>
             <h3>Propuestas enviadas en esta sesión</h3>
