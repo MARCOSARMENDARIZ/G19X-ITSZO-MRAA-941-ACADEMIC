@@ -2403,3 +2403,84 @@ form button:active {
     font-size: 19px;
   }
 }
+
+/* Parte del Alertas */
+
+.alerta-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(3px);
+}
+
+.alerta-contenido {
+  width: 100%;
+  max-width: 400px;
+  padding: 30px;
+  border-radius: 18px;
+  background: #ffffff;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  animation: aparecerAlerta 0.22s ease-out;
+}
+
+.alerta-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 18px;
+  border: 3px solid #dc3545;
+  border-radius: 50%;
+  color: #dc3545;
+  font-size: 38px;
+  font-weight: 700;
+}
+
+.alerta-contenido h2 {
+  margin: 0 0 12px;
+  color: #1e293b;
+  font-size: 23px;
+}
+
+.alerta-contenido p {
+  margin: 0 0 24px;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.alerta-contenido button {
+  border: none;
+  border-radius: 9px;
+  padding: 12px 26px;
+  background: #dc3545;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.alerta-contenido button:hover {
+  background: #b02a37;
+}
+
+@keyframes aparecerAlerta {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

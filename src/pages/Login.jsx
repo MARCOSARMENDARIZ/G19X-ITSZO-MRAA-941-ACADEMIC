@@ -1,206 +1,242 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function Login() {
-  const [usuario, setUsuario] = useState('')
-  const [password, setPassword] = useState('')
-  const [cargando, setCargando] = useState(false)
+  const [usuario, setUsuario] = useState('');
+  const [password, setPassword] = useState('');
+  const [cargando, setCargando] = useState(false);
 
-  const [mostrarModalRecuperar, setMostrarModalRecuperar] = useState(false)
-  const [paso, setPaso] = useState(1)
+  const [mostrarModalRecuperar, setMostrarModalRecuperar] = useState(false);
+  const [paso, setPaso] = useState(1);
 
-  const [emailRecuperacion, setEmailRecuperacion] = useState('')
-  const [codigo, setCodigo] = useState('')
-  const [nuevaPassword, setNuevaPassword] = useState('')
-  const [confirmarPassword, setConfirmarPassword] = useState('')
-  const [procesando, setProcesando] = useState(false)
+  const [emailRecuperacion, setEmailRecuperacion] = useState('');
+  const [codigo, setCodigo] = useState('');
+  const [nuevaPassword, setNuevaPassword] = useState('');
+  const [confirmarPassword, setConfirmarPassword] = useState('');
+  const [procesando, setProcesando] = useState(false);
 
-  const navigate = useNavigate()
+  const [mostrarModal, setMostrarModal] = useState(false);
+  const [mensajeModal, setMensajeModal] = useState('');
+
+  const navigate = useNavigate();
+
+  // MOSTRAR MODAL DE ALERTA
+  const mostrarAlerta = (mensaje) => {
+    setMensajeModal(mensaje);
+    setMostrarModal(true);
+  };
+
+  // CERRAR MODAL DE ALERTA
+  const cerrarModalAlerta = () => {
+    setMostrarModal(false);
+    setMensajeModal('');
+  };
 
   // INICIAR SESIÓN
- 
-const iniciarSesion = async (e) => {
-  e.preventDefault();
+  const iniciarSesion = async (e) => {
+    e.preventDefault();
 
-  if (!usuario.trim() || !password) {
-    alert('Completa todos los campos');
-    return;
-  }
+    if (!usuario.trim() || !password) {
+      mostrarAlerta('Completa todos los campos');
+      return;
+    }
 
-  setCargando(true);
-
-  try {
-    const respuesta = await fetch('http://localhost:5000/api/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ usuario, password })
-    });
-
-    const texto = await respuesta.text();
-    let data = {};
+    setCargando(true);
 
     try {
-      data = JSON.parse(texto);
-    } catch {
-      console.error('La respuesta del servidor no es JSON:', texto);
-    }
+      const respuesta = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ usuario, password }),
+      });
 
-    if (respuesta.ok && data.exito) {
-      if (!data.token) {
-        alert('El servidor no devolvió el token de autenticación');
-        return;
+      const texto = await respuesta.text();
+      let data = {};
+
+      try {
+        data = JSON.parse(texto);
+      } catch {
+        console.error('La respuesta del servidor no es JSON:', texto);
       }
 
-      localStorage.setItem('usuario', JSON.stringify(data.usuario));
-      localStorage.setItem('token', data.token);
+      if (respuesta.ok && data.exito) {
+        if (!data.token) {
+          mostrarAlerta(
+            'El servidor no devolvió el token de autenticación'
+          );
+          return;
+        }
 
-      navigate('/inicio', { replace: true });
-    } else {
-      alert(data.mensaje || 'Usuario o contraseña incorrectos');
+        localStorage.setItem('usuario', JSON.stringify(data.usuario));
+        localStorage.setItem('token', data.token);
+
+        navigate('/inicio', { replace: true });
+      } else {
+        mostrarAlerta(
+          data.mensaje || 'Usuario o contraseña incorrectos'
+        );
+      }
+    } catch (error) {
+      console.error('Error al iniciar sesión:', error);
+      mostrarAlerta('No se pudo conectar con el servidor');
+    } finally {
+      setCargando(false);
     }
-  } catch (error) {
-    console.error('Error al iniciar sesión:', error);
-    alert('No se pudo conectar con el servidor');
-  } finally {
-    setCargando(false);
-  }
-};
-
+  };
 
   // PASO 1: SOLICITAR CÓDIGO POR CORREO
   const handleVerificarEmail = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!emailRecuperacion.trim()) {
-      alert('Ingresa tu correo electrónico')
-      return
+      mostrarAlerta('Ingresa tu correo electrónico');
+      return;
     }
 
-    setProcesando(true)
+    setProcesando(true);
 
     try {
       const res = await fetch('http://localhost:5000/api/verificar-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          email: emailRecuperacion.trim()
-        })
-      })
+          email: emailRecuperacion.trim(),
+        }),
+      });
 
-      const data = await res.json()
+      const data = await res.json();
 
       if (res.ok && data.exito) {
-        setPaso(2)
-        setCodigo('')
-        alert(
+        setPaso(2);
+        setCodigo('');
+
+        mostrarAlerta(
           data.mensaje ||
-          'Si el correo está registrado, recibirás un código de verificación. Revisa tu bandeja de entrada y spam.'
-        )
+            'Si el correo está registrado, recibirás un código de verificación. Revisa tu bandeja de entrada y spam.'
+        );
       } else {
-        alert(data.mensaje || 'No se pudo solicitar el código')
+        mostrarAlerta(
+          data.mensaje || 'No se pudo solicitar el código'
+        );
       }
     } catch (error) {
-      console.error('Error al solicitar el código:', error)
-      alert('Error de conexión con el servidor')
+      console.error('Error al solicitar el código:', error);
+      mostrarAlerta('Error de conexión con el servidor');
     } finally {
-      setProcesando(false)
+      setProcesando(false);
     }
-  }
+  };
 
   // PASO 2: VERIFICAR CÓDIGO
   const handleVerificarCodigo = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!/^\d{6}$/.test(codigo)) {
-      alert('Ingresa el código de verificación de 6 dígitos')
-      return
+      mostrarAlerta('Ingresa el código de verificación de 6 dígitos');
+      return;
     }
 
-    setProcesando(true)
+    setProcesando(true);
 
     try {
       const res = await fetch('http://localhost:5000/api/verificar-codigo', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           email: emailRecuperacion.trim(),
-          codigo
-        })
-      })
+          codigo,
+        }),
+      });
 
-      const data = await res.json()
+      const data = await res.json();
 
       if (res.ok && data.exito) {
-        setPaso(3)
+        setPaso(3);
       } else {
-        alert(data.mensaje || 'El código es incorrecto o ha expirado')
+        mostrarAlerta(
+          data.mensaje || 'El código es incorrecto o ha expirado'
+        );
       }
     } catch (error) {
-      console.error('Error al verificar el código:', error)
-      alert('Error de conexión con el servidor')
+      console.error('Error al verificar el código:', error);
+      mostrarAlerta('Error de conexión con el servidor');
     } finally {
-      setProcesando(false)
+      setProcesando(false);
     }
-  }
+  };
 
   // PASO 3: CAMBIAR CONTRASEÑA
   const handleCambiarPassword = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (nuevaPassword.length < 6) {
-      alert('La contraseña debe tener al menos 6 caracteres')
-      return
+      mostrarAlerta(
+        'La contraseña debe tener al menos 6 caracteres'
+      );
+      return;
     }
 
     if (nuevaPassword !== confirmarPassword) {
-      alert('Las contraseñas no coinciden')
-      return
+      mostrarAlerta('Las contraseñas no coinciden');
+      return;
     }
 
-    setProcesando(true)
+    setProcesando(true);
 
     try {
       const res = await fetch(
         'http://localhost:5000/api/cambiar-password-directo',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify({
             email: emailRecuperacion.trim(),
             codigo,
-            nuevaPassword
-          })
+            nuevaPassword,
+          }),
         }
-      )
+      );
 
-      const data = await res.json()
+      const data = await res.json();
 
       if (res.ok && data.exito) {
-        alert('Contraseña actualizada correctamente. Ya puedes iniciar sesión.')
-        cerrarModalRecuperacion()
+        cerrarModalRecuperacion();
+
+        mostrarAlerta(
+          'Contraseña actualizada correctamente. Ya puedes iniciar sesión.'
+        );
       } else {
-        alert(data.mensaje || 'No se pudo actualizar la contraseña')
+        mostrarAlerta(
+          data.mensaje || 'No se pudo actualizar la contraseña'
+        );
       }
     } catch (error) {
-      console.error('Error al cambiar la contraseña:', error)
-      alert('Error de conexión con el servidor')
+      console.error('Error al cambiar la contraseña:', error);
+      mostrarAlerta('Error de conexión con el servidor');
     } finally {
-      setProcesando(false)
+      setProcesando(false);
     }
-  }
+  };
 
-  // CERRAR Y LIMPIAR EL MODAL
+  // CERRAR Y LIMPIAR EL MODAL DE RECUPERACIÓN
   const cerrarModalRecuperacion = () => {
-    setMostrarModalRecuperar(false)
-    setPaso(1)
-    setEmailRecuperacion('')
-    setCodigo('')
-    setNuevaPassword('')
-    setConfirmarPassword('')
-    setProcesando(false)
-  }
+    setMostrarModalRecuperar(false);
+    setPaso(1);
+    setEmailRecuperacion('');
+    setCodigo('');
+    setNuevaPassword('');
+    setConfirmarPassword('');
+    setProcesando(false);
+  };
 
   return (
     <div className="login-page">
@@ -237,8 +273,8 @@ const iniciarSesion = async (e) => {
         <a
           href="#olvidaste-password"
           onClick={(e) => {
-            e.preventDefault()
-            setMostrarModalRecuperar(true)
+            e.preventDefault();
+            setMostrarModalRecuperar(true);
           }}
           className="link-olvidaste"
         >
@@ -282,7 +318,7 @@ const iniciarSesion = async (e) => {
                   style={{
                     color: '#64748b',
                     fontSize: '0.9rem',
-                    gridColumn: 'span 2'
+                    gridColumn: 'span 2',
                   }}
                 >
                   Ingresa el correo electrónico asociado a tu cuenta.
@@ -336,7 +372,7 @@ const iniciarSesion = async (e) => {
                   style={{
                     color: '#64748b',
                     fontSize: '0.9rem',
-                    gridColumn: 'span 2'
+                    gridColumn: 'span 2',
                   }}
                 >
                   Ingresa el código de 6 dígitos enviado a{' '}
@@ -371,8 +407,8 @@ const iniciarSesion = async (e) => {
                     type="button"
                     className="btn-cancelar"
                     onClick={() => {
-                      setPaso(1)
-                      setCodigo('')
+                      setPaso(1);
+                      setCodigo('');
                     }}
                   >
                     Volver
@@ -399,7 +435,7 @@ const iniciarSesion = async (e) => {
                   style={{
                     color: '#64748b',
                     fontSize: '0.9rem',
-                    gridColumn: 'span 2'
+                    gridColumn: 'span 2',
                   }}
                 >
                   Código verificado. Ahora puedes crear una nueva
@@ -462,8 +498,34 @@ const iniciarSesion = async (e) => {
           </div>
         </div>
       )}
+
+      {/* MODAL INDEPENDIENTE DE ALERTAS */}
+      {mostrarModal && (
+        <div className="alerta-overlay">
+          <div
+            className="alerta-contenido"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="titulo-alerta"
+          >
+            <div className="alerta-icono">!</div>
+
+            <h2 id="titulo-alerta">Aviso</h2>
+
+            <p>{mensajeModal}</p>
+
+            <button
+              type="button"
+              onClick={cerrarModalAlerta}
+              autoFocus
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
     </div>
-  )
+  );
 }
 
-export default Login
+export default Login;
