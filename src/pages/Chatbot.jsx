@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../api";
 
 const MENSAJE_INICIAL = {
@@ -29,6 +30,7 @@ function cargarChats() {
 }
 
 function Chatbot() {
+  const navigate = useNavigate();
   const [chats, setChats] = useState(cargarChats);
 
   const [chatActivoId, setChatActivoId] = useState(() => {
@@ -191,7 +193,14 @@ function Chatbot() {
   return (
     <div className="chat-layout">
       <aside className="chat-sidebar">
-        <h3>💬 Mis conversaciones</h3>
+         <button
+            type="button"
+            className="btn-regresar-inicio"
+            onClick={() => navigate("/inicio")}
+          >
+            <i className="bi bi-arrow-left"></i>
+            Regresar al inicio
+          </button>
 
         <button
           type="button"
@@ -230,7 +239,7 @@ function Chatbot() {
                 title="Eliminar conversación"
                 aria-label={`Eliminar ${chat.titulo}`}
               >
-                🗑️
+                <i class="bi bi-trash3-fill" style={{ color: "#2563EB"}}></i>
               </button>
             </div>
           ))}
@@ -239,7 +248,12 @@ function Chatbot() {
 
       <main className="chat-container">
         <div className="chat-header">
-          <h3>🤖 Chatbot Bienestar IA</h3>
+          
+
+          <h3><i
+              className="bi bi-chat-left-dots-fill"
+              style={{ color: "#2563EB" }}
+            ></i> Chatbot Bienestar IA</h3>
           <span>Asistente de bienestar organizacional</span>
         </div>
 
@@ -248,8 +262,8 @@ function Chatbot() {
             <div
               key={`${chatActivoId}-${index}`}
               className={`mensaje ${msg.remitente === "usuario"
-                  ? "mensaje-usuario"
-                  : "mensaje-bot"
+                ? "mensaje-usuario"
+                : "mensaje-bot"
                 }`}
             >
               {msg.texto}
@@ -258,7 +272,7 @@ function Chatbot() {
 
           {cargando && (
             <div className="mensaje mensaje-bot">
-              Escribiendo... 💬
+              Escribiendo... 
             </div>
           )}
 

@@ -155,18 +155,6 @@ function Inicio() {
             </p>
           </div>
 
-          <div className="user">
-            👤 {usuario ? usuario.nombre : "Cargando..."}
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            marginBottom: "16px"
-          }}
-        >
           <button
             type="button"
             onClick={cargarTablero}
@@ -176,6 +164,7 @@ function Inicio() {
             <i className="bi bi-arrow-clockwise"></i>{" "}
             {cargando ? "Actualizando..." : "Actualizar tablero"}
           </button>
+        
         </div>
 
         {error && (
@@ -194,7 +183,7 @@ function Inicio() {
         <section className="kpi-grid">
           {usuario?.rol === "admin" && (
             <div className="kpi-card">
-              <div className="kpi-icon icon-blue">👥</div>
+              <div className="kpi-icon icon-blue"><i class="bi bi-people-fill"></i></div>
               <div className="kpi-data">
                 <span className="kpi-title">Usuarios registrados</span>
                 <h3 className="kpi-value">
@@ -208,7 +197,9 @@ function Inicio() {
           )}
 
           <div className="kpi-card">
-            <div className="kpi-icon icon-green">📋</div>
+            <div className="kpi-icon icon-green"> <i
+              className="bi bi-card-checklist"
+            ></i></div>
             <div className="kpi-data">
               <span className="kpi-title">Encuestas creadas</span>
               <h3 className="kpi-value">
@@ -221,7 +212,7 @@ function Inicio() {
           </div>
 
           <div className="kpi-card">
-            <div className="kpi-icon icon-orange">📊</div>
+            <div className="kpi-icon icon-orange"><i class="bi bi-award-fill"></i></div>
             <div className="kpi-data">
               <span className="kpi-title">Participaciones</span>
               <h3 className="kpi-value">

@@ -1612,10 +1612,10 @@ form textarea {
   width: 100%;
   box-sizing: border-box;
   padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid #2563eb;
   border-radius: 8px;
   font-size: 1rem;
-  color: #1f2937;
+  color: #fdfdfe;
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
@@ -1625,7 +1625,7 @@ form input[type="text"]:focus,
 form textarea:focus {
   outline: none;
   border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
 }
 
 form textarea {
@@ -1918,7 +1918,7 @@ form button:active {
   margin: 20px auto;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  background-color: #ffffff;
+  background-color: #fffcfc;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1932,7 +1932,7 @@ form button:active {
 
 .chat-header {
   background-color: #2563eb;
-  color: #ffffff;
+  color: #2563eb;
   padding: 16px 24px;
 }
 
@@ -1979,7 +1979,7 @@ form button:active {
 .mensaje-bot {
   align-self: flex-start;
   background-color: #e2e8f0;
-  color: #0f172a;
+  color: #2a0f0f;
   border-bottom-left-radius: 2px;
 }
 
@@ -2003,8 +2003,8 @@ form button:active {
 .chat-input-form {
   display: flex;
   padding: 16px 24px;
-  background-color: #ffffff;
-  border-top: 1px solid #e2e8f0;
+  background-color: #040404;
+  border-top: 1px solid #006eff;
   gap: 12px;
 }
 
@@ -2144,7 +2144,7 @@ form button:active {
   border: 1px solid #dedede;
   border-radius: 9px;
   background: #ffffff;
-  color: #dc0011;
+  color: #2563eb;
   font-weight: 600;
   cursor: pointer;
 }
@@ -2233,7 +2233,7 @@ form button:active {
 }
 
 .chat-header span {
-  color: #6b7280;
+  color: #2563eb;
   font-size: 12px;
 }
 
@@ -2257,7 +2257,7 @@ form button:active {
 
 .mensaje-usuario {
   align-self: flex-end;
-  background: #dc0011;
+  background: #2563eb;
   color: #ffffff;
   border-bottom-right-radius: 4px;
 }
@@ -2294,7 +2294,7 @@ form button:active {
   padding: 12px 20px;
   border: none;
   border-radius: 9px;
-  background: #dc0011;
+  background: #2563eb;
   color: #ffffff;
   font-weight: 600;
   cursor: pointer;
@@ -2483,4 +2483,30 @@ form button:active {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+.btn-regresar-inicio {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  margin-bottom: 15px;
+  border: none;
+  border-radius: 8px;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-regresar-inicio:hover {
+  background-color: #3e1cb9;
+}
+
+.btn-regresar-inicio:focus-visible {
+  outline: 3px solid #fca5a5;
+  outline-offset: 3px;
 }

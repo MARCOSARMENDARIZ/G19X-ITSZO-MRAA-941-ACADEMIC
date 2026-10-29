@@ -781,9 +781,10 @@ app.post('/api/encuestas', autenticarToken, soloAdministrador, async (req, res) 
 
 // 4. Guardar respuestas únicamente si la encuesta sigue abierta.
 
-app.post('/api/encuestas/:id/respuestas', async (req, res) => {
+app.post('/api/encuestas/:id/respuestas', autenticarToken, async (req, res) => {
   const encuesta_id = req.params.id;
-  const { usuario_id, respuestas } = req.body;
+const usuario_id = req.usuario.id;
+const { respuestas } = req.body;
 
   const client = await pool.connect();
 
@@ -1026,8 +1027,9 @@ app.post('/api/encuestas/:id/respuestas', async (req, res) => {
 // PROPUESTAS
 // =========================================================================
 
-app.post('/api/propuestas', async (req, res) => {
-  const { usuario_id, titulo, descripcion } = req.body;
+app.post('/api/propuestas', autenticarToken, async (req, res) => {
+  const usuario_id = req.usuario.id;
+  const { titulo, descripcion } = req.body;
 
   if (
     typeof titulo !== 'string' ||
@@ -1097,7 +1099,7 @@ app.get('/api/propuestas', async (req, res) => {
 // CHATBOT CON CLOUDFLARE WORKERS AI
 // =========================================================================
 
-app.post('/api/chatbot', async (req, res) => {
+app.post('/api/chatbot', autenticarToken, async (req, res) => {
   const { mensaje, historial } = req.body;
 
   if (
@@ -1560,7 +1562,7 @@ La estructura debe ser:
 // ANALIZAR VIABILIDAD DE UNA PROPUESTA CON CLOUDFLARE WORKERS AI
 // =========================================================================
 
-app.post('/api/analizar-viabilidad', async (req, res) => {
+app.post('/api/analizar-viabilidad', autenticarToken, async (req, res) => {
   const { titulo, descripcion } = req.body;
 
   const tituloValido =
@@ -1984,7 +1986,7 @@ app.post('/api/cambiar-password-directo', async (req, res) => {
   }
 });
 
-app.get('/api/tablero', async (req, res) => {
+app.get('/api/tablero', autenticarToken, async (req, res) => {
   try {
     const [
       usuariosResult,
