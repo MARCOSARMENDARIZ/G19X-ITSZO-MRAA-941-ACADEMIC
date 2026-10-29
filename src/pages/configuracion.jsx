@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { apiFetch } from "../api";
 
 function Configuracion() {
   const [listaUsuarios, setListaUsuarios] = useState([]);
@@ -24,6 +25,19 @@ function Configuracion() {
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
   const [nuevaPassword, setNuevaPassword] = useState("");
   const [cambiandoPassword, setCambiandoPassword] = useState(false);
+
+  const [mostrarModalAlerta, setMostrarModalAlerta] = useState(false);
+const [mensajeAlerta, setMensajeAlerta] = useState("");
+
+const mostrarAlerta = (mensaje) => {
+  setMensajeAlerta(mensaje);
+  setMostrarModalAlerta(true);
+};
+
+const cerrarModalAlerta = () => {
+  setMostrarModalAlerta(false);
+  setMensajeAlerta("");
+};
 
   const [mostrarModalViabilidad, setMostrarModalViabilidad] = useState(false);
   const [propuestaSeleccionada, setPropuestaSeleccionada] = useState(null);
@@ -129,7 +143,7 @@ function Configuracion() {
       const token = obtenerToken();
 
       if (!token) {
-        alert("Tu sesión ha expirado. Inicia sesión nuevamente.");
+        mostrarAlerta("Tu sesión ha expirado. Inicia sesión nuevamente.");
         return;
       }
 
@@ -148,7 +162,7 @@ function Configuracion() {
       const data = await res.json();
 
       if (res.ok && data.exito) {
-        alert("¡Usuario registrado exitosamente!");
+        mostrarAlerta("¡Usuario registrado exitosamente!");
 
         setMostrarModal(false);
 
@@ -164,11 +178,11 @@ function Configuracion() {
 
         await obtenerUsuarios();
       } else {
-        alert(data.mensaje || "Error al registrar usuario");
+        mostrarAlerta(data.mensaje || "Error al registrar usuario");
       }
     } catch (error) {
       console.error("Error al registrar usuario:", error);
-      alert("Error de conexión con el servidor");
+      mostrarAlerta("Error de conexión con el servidor");
     } finally {
       setGuardando(false);
     }
@@ -180,60 +194,55 @@ function Configuracion() {
     setMostrarModalPassword(true);
   };
 
-  const handleCambiarPassword = async (e) => {
-    e.preventDefault();
+ const handleCambiarPassword = async (e) => {
+  e.preventDefault();
 
-    if (!nuevaPassword || nuevaPassword.trim().length < 6) {
-      alert("La contraseña debe tener al menos 6 caracteres.");
-      return;
-    }
+  if (!nuevaPassword || nuevaPassword.trim().length < 8) {
+    mostrarAlerta("La contraseña debe tener al menos 8 caracteres.");
+    return;
+  }
 
-    setCambiandoPassword(true);
+  if (!usuarioSeleccionado?.id) {
+    mostrarAlerta("No se ha seleccionado un usuario válido.");
+    return;
+  }
 
-    try {
-      const token = obtenerToken();
+  setCambiandoPassword(true);
 
-      if (!token) {
-        alert("Tu sesión ha expirado. Inicia sesión nuevamente.");
-        return;
+  try {
+    const res = await apiFetch(
+      `/api/usuarios/${usuarioSeleccionado.id}/password`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          nuevaPassword
+        })
       }
+    );
 
-      const res = await fetch(
-        "http://localhost:5000/api/cambiar-password-directo",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            email: usuarioSeleccionado.email,
-            nuevaPassword
-          })
-        }
+    const data = await res.json();
+
+    if (res.ok && data.exito) {
+      mostrarAlerta(
+        `¡Contraseña actualizada con éxito para ${usuarioSeleccionado.nombre}!`
       );
 
-      const data = await res.json();
-
-      if (res.ok && data.exito) {
-        alert(
-          `¡Contraseña actualizada con éxito para ${usuarioSeleccionado.nombre}!`
-        );
-
-        setMostrarModalPassword(false);
-        setUsuarioSeleccionado(null);
-        setNuevaPassword("");
-      } else {
-        alert(data.mensaje || "Error al cambiar la contraseña");
-      }
-    } catch (error) {
-      console.error("Error al cambiar contraseña:", error);
-      alert("Error de conexión con el servidor al cambiar la contraseña.");
-    } finally {
-      setCambiandoPassword(false);
+      setMostrarModalPassword(false);
+      setUsuarioSeleccionado(null);
+      setNuevaPassword("");
+    } else {
+      mostrarAlerta(data.mensaje || "Error al cambiar la contraseña.");
     }
-  };
-
+  } catch (error) {
+    console.error("Error al cambiar contraseña:", error);
+    mostrarAlerta("Error de conexión con el servidor al cambiar la contraseña.");
+  } finally {
+    setCambiandoPassword(false);
+  }
+};
   const handleEliminar = async (id, nombre) => {
     const confirmar = window.confirm(
       `¿Estás seguro de que deseas eliminar a ${nombre}?`
@@ -245,7 +254,7 @@ function Configuracion() {
       const token = obtenerToken();
 
       if (!token) {
-        alert("Tu sesión ha expirado. Inicia sesión nuevamente.");
+        mostrarAlerta("Tu sesión ha expirado. Inicia sesión nuevamente.");
         return;
       }
 
@@ -262,17 +271,17 @@ function Configuracion() {
       const data = await res.json();
 
       if (res.ok && data.exito) {
-        alert("Usuario eliminado correctamente.");
+        mostrarAlerta("Usuario eliminado correctamente.");
 
         setListaUsuarios((prev) =>
           prev.filter((usr) => String(usr.id) !== String(id))
         );
       } else {
-        alert(data.mensaje || "Error al eliminar el usuario.");
+        mostrarAlerta(data.mensaje || "Error al eliminar el usuario.");
       }
     } catch (error) {
       console.error("Error al eliminar usuario:", error);
-      alert("Error de conexión al intentar eliminar el usuario.");
+      mostrarAlerta("Error de conexión al intentar eliminar el usuario.");
     }
   };
 
@@ -731,7 +740,7 @@ function Configuracion() {
                   value={nuevaPassword}
                   onChange={(e) => setNuevaPassword(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={8}
                   placeholder="Ingresa la nueva contraseña"
                 />
               </div>
@@ -834,6 +843,32 @@ function Configuracion() {
           </div>
         </div>
       )}
+
+      {/* MODAL INDEPENDIENTE DE ALERTAS */}
+{mostrarModalAlerta && (
+  <div className="alerta-overlay">
+    <div
+      className="alerta-contenido"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="titulo-alerta"
+    >
+      <div className="alerta-icono">!</div>
+
+      <h2 id="titulo-alerta">Aviso</h2>
+
+      <p>{mensajeAlerta}</p>
+
+      <button
+        type="button"
+        onClick={cerrarModalAlerta}
+        autoFocus
+      >
+        Entendido
+      </button>
+    </div>
+  </div>
+)}
     </div>
   );
 }
