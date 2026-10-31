@@ -281,7 +281,7 @@ function Chatbot() {
 
         <form onSubmit={enviarMensaje} className="chat-input-form">
           <input
-            type="text"
+            type="text2"
             placeholder="Escribe tu mensaje..."
             value={input}
             onChange={(e) => setInput(e.target.value)}

@@ -160,6 +160,7 @@ function Inicio() {
             onClick={cargarTablero}
             disabled={cargando}
             className="btn btn-outline-primary"
+            style={{backgroundColor: "#2563EB"}}
           >
             <i className="bi bi-arrow-clockwise"></i>{" "}
             {cargando ? "Actualizando..." : "Actualizar tablero"}
@@ -225,7 +226,7 @@ function Inicio() {
           </div>
 
           <div className="kpi-card">
-            <div className="kpi-icon icon-purple">💡</div>
+            <div className="kpi-icon icon-purple"><i class="bi bi-lightbulb-fill"></i></div>
             <div className="kpi-data">
               <span className="kpi-title">Propuestas recibidas</span>
               <h3 className="kpi-value">

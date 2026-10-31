@@ -1414,7 +1414,7 @@ main > div p {
   width: 100%;
   padding: 0.625rem 0.75rem;
   font-size: 0.9rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #000000;
   border-radius: 8px;
   background-color: #f8fafc;
   color: #0f172a;
@@ -1606,6 +1606,19 @@ form label {
   display: inline-block;
   margin-bottom: 0.4rem;
 }
+form input[type="text2"],
+form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem 1rem;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #fffefe;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
 
 form input[type="text"],
 form textarea {
@@ -1615,7 +1628,7 @@ form textarea {
   border: 1px solid #2563eb;
   border-radius: 8px;
   font-size: 1rem;
-  color: #fdfdfe;
+  color: #000000;
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
@@ -1631,6 +1644,15 @@ form textarea:focus {
 form textarea {
   min-height: 120px;
   resize: vertical;
+}
+
+#descripcion {
+  color: white;
+}
+
+#descripcion::placeholder {
+  color: white;
+  opacity: 1;
 }
 
 

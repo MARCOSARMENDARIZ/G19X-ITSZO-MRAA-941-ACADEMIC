@@ -92,6 +92,7 @@ function Bienestar() {
               <br />
               <textarea
                 id="descripcion"
+                type="text2"
                 placeholder="Escribe tu propuesta aquí..."
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}

@@ -80,60 +80,6 @@ function soloAdministrador(req, res, next) {
   next();
 }
 
-
-if (!JWT_SECRET) {
-  throw new Error('Falta configurar JWT_SECRET en el archivo .env');
-}
-
-function autenticarToken(req, res, next) {
-  const encabezado = req.headers.authorization;
-
-  if (!encabezado || !encabezado.startsWith('Bearer ')) {
-    return res.status(401).json({
-      exito: false,
-      mensaje: 'Debes iniciar sesión para acceder a este recurso.'
-    });
-  }
-
-  const token = encabezado.slice(7).trim();
-
-  try {
-    const datos = jwt.verify(token, JWT_SECRET);
-
-    if (!datos.id || !datos.rol) {
-      return res.status(401).json({
-        exito: false,
-        mensaje: 'El token no contiene los datos necesarios.'
-      });
-    }
-
-    req.usuario = {
-      id: datos.id,
-      rol: datos.rol
-    };
-
-    next();
-  } catch (error) {
-    return res.status(401).json({
-      exito: false,
-      mensaje: 'La sesión no es válida o ha caducado.'
-    });
-  }
-}
-
-function soloAdministrador(req, res, next) {
-  const rol = String(req.usuario?.rol || '').trim().toLowerCase();
-
-  if (rol !== 'admin' && rol !== 'administrador') {
-    return res.status(403).json({
-      exito: false,
-      mensaje: 'Acceso exclusivo para administradores'
-    });
-  }
-
-  next();
-}
-
 const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
