@@ -37,7 +37,8 @@ Plataforma-bienestar/
 │   │   └── schema.sql
 │   ├── server.js
 │   ├── package.json
-│   └── .env                 # local; no subir a Git
+│   └── .env.example
+    └── .env                # local; no subir a Git
 ├── docs/
 │   ├── PRD.md
 │   └── MVP.md
@@ -208,7 +209,7 @@ RETURNING id;
 
 Después crea el perfil usando el `id` devuelto:
 
-```sql
+```sql||
 INSERT INTO perfiles (usuario_id, puesto, departamento, fecha_ingreso)
 VALUES (ID_DEVUELTO, 'Administrador', 'Administración', CURRENT_DATE);
 ```
