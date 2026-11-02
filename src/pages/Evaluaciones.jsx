@@ -52,7 +52,7 @@ function Encuestas({ usuario }) {
 
     try {
       const userId = usuarioActual?.id ? `?usuario_id=${usuarioActual.id}` : "";
-      const res = await fetch(`${API_URL}${userId}`);
+      const res = await apiFetch(`${API_URL}${userId}`);
       const data = await res.json();
 
       if (!res.ok || !data.exito) {
@@ -141,7 +141,7 @@ function Encuestas({ usuario }) {
     setRespuestasForm({});
 
     try {
-      const res = await fetch(`${API_URL}/${encuesta.id}`);
+      const res = await apiFetch(`${API_URL}/${encuesta.id}`);
       const data = await res.json();
 
       if (!res.ok || !data.exito) {
@@ -175,7 +175,7 @@ function Encuestas({ usuario }) {
     setCargandoAnalisis(esAdmin);
 
     try {
-      const res = await fetch(`${API_URL}/${encuesta.id}`);
+      const res = await apiFetch(`${API_URL}/${encuesta.id}`);
       const data = await res.json();
 
       if (data.exito) {
@@ -262,17 +262,16 @@ function Encuestas({ usuario }) {
     setEnviandoRespuestas(true);
 
     try {
-      const res = await fetch(
-        `${API_URL}/${encuestaSeleccionada.id}/respuestas`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            usuario_id: usuarioActual?.id || null,
-            respuestas: payloadRespuestas
-          })
-        }
-      );
+      const res = await apiFetch(
+  `${API_URL}/${encuestaSeleccionada.id}/respuestas`,
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      respuestas: payloadRespuestas
+    })
+  }
+);
 
       const data = await res.json();
 

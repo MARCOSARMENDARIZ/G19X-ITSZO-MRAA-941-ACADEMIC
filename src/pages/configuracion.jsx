@@ -292,24 +292,23 @@ const cerrarModalAlerta = () => {
     setResumenViabilidadIA("");
 
     try {
-      const res = await fetch(
-        "http://localhost:5000/api/analizar-viabilidad",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            id: propuesta.id,
-            titulo: propuesta.titulo || propuesta.title,
-            descripcion:
-              propuesta.descripcion ||
-              propuesta.description ||
-              propuesta.contenido
-          })
-        }
-      );
-
+     const res = await apiFetch(
+  "http://localhost:5000/api/analizar-viabilidad",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      id: propuesta.id,
+      titulo: propuesta.titulo || propuesta.title,
+      descripcion:
+        propuesta.descripcion ||
+        propuesta.description ||
+        propuesta.contenido
+    })
+  }
+);
       const data = await res.json();
 
       if (res.ok && (data.exito || data.resumen)) {
