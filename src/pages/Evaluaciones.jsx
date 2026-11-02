@@ -461,14 +461,14 @@ function Encuestas({ usuario }) {
       <div className="config-header">
         <Link to="/inicio" className="btn-volver">←</Link>
         <div>
-          <h1>📋 Encuestas y Cuestionarios</h1>
+          <h1>Encuestas y Cuestionarios</h1>
           <p>Crea encuestas para los usuarios y analiza sus respuestas con IA</p>
         </div>
       </div>
 
       <div className="evaluaciones-kpi-grid">
         <div className="kpi-card">
-          <div className="kpi-icon blue">📝</div>
+          <div className="kpi-icon blue"><i class="bi bi-list-check"></i></div>
           <div>
             <h3>Encuestas Activas</h3>
             <p className="kpi-numero">{encuestasActivas}</p>
@@ -476,7 +476,7 @@ function Encuestas({ usuario }) {
         </div>
 
         <div className="kpi-card">
-          <div className="kpi-icon green">💬</div>
+          <div className="kpi-icon green"><i class="bi bi-chat-fill"></i></div>
           <div>
             <h3>Respuestas Recibidas</h3>
             <p className="kpi-numero">{totalRespuestas}</p>
@@ -484,7 +484,7 @@ function Encuestas({ usuario }) {
         </div>
 
         <div className="kpi-card">
-          <div className="kpi-icon orange">📊</div>
+          <div className="kpi-icon orange"><i class="bi bi-bar-chart-fill"></i></div>
           <div>
             <h3>Total Registradas</h3>
             <p className="kpi-numero">{encuestas.length}</p>
@@ -502,7 +502,7 @@ function Encuestas({ usuario }) {
                 className="btn-agregar-usuario"
                 onClick={abrirCrearEncuesta}
               >
-                ➕ Crear Nueva Encuesta
+                <i class="bi bi-plus-lg"></i> Crear Nueva Encuesta
               </button>
             )}
 
@@ -547,7 +547,13 @@ function Encuestas({ usuario }) {
                     className={`encuesta-temporizador ${vencida ? "vencido" : ""
                       }`}
                   >
-                    <span>{vencida ? "🔒" : "⏳"}</span>
+                    <span>
+                      {vencida ? (
+                        <i className="bi bi-lock-fill"></i>
+                      ) : (
+                        <i className="bi bi-hourglass-split"></i>
+                      )}
+                    </span>
                     <div>
                       <strong>
                         {!enc.fecha_cierre
@@ -567,8 +573,8 @@ function Encuestas({ usuario }) {
                   </div>
 
                   <div className="encuesta-meta">
-                    <span>❓ {enc.preguntasCount} Preguntas</span>
-                    <span>💬 {enc.respuestasCount} Respuestas</span>
+                    <span><i class="bi bi-list-check"></i> {enc.preguntasCount} Preguntas</span>
+                    <span><i class="bi bi-chat-fill"></i> {enc.respuestasCount} Respuestas</span>
                   </div>
 
                   <div className="encuesta-acciones">
@@ -577,13 +583,13 @@ function Encuestas({ usuario }) {
                         className="btn-responder"
                         onClick={() => abrirResponder(enc)}
                       >
-                        ✏️ Responder Encuesta
+                        Responder Encuesta
                       </button>
                     )}
 
                     {enc.yaRespondida && (
                       <span style={{ color: "#16a34a", fontWeight: "bold", fontSize: "0.9rem" }}>
-                        ✅ Ya respondida
+                        <i class="bi bi-check-square-fill"></i> Ya respondida
                       </span>
                     )}
 
@@ -591,7 +597,7 @@ function Encuestas({ usuario }) {
                       className="btn-resultados"
                       onClick={() => abrirResultados(enc)}
                     >
-                      📊 Ver Resultados
+                      <i class="bi bi-bar-chart-fill"></i> Ver Resultados
                     </button>
                   </div>
                 </div>
@@ -822,8 +828,8 @@ function Encuestas({ usuario }) {
                           type="button"
                           disabled={encuestaVencida(encuestaSeleccionada)}
                           className={`btn-rating ${respuestasForm[preg.id]?.valor_numero === num
-                              ? "activo"
-                              : ""
+                            ? "activo"
+                            : ""
                             }`}
                           onClick={() =>
                             handleRespuestaChange(

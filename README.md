@@ -109,7 +109,6 @@ Notas importantes:
 - Sustituye los valores de ejemplo por los valores de tu entorno.
 - No uses valores de ejemplo como si fueran credenciales reales.
 - El código actual de chatbot, análisis de encuestas y viabilidad consulta Cloudflare Workers AI.
-- `server.js` también importa e inicializa `@google/genai`; revisa esa inicialización si no vas a utilizar Gemini.
 - Si una credencial real se compartió o subió a un repositorio, revócala y genera otra. Borrar el archivo no invalida una credencial expuesta.
 - Para compartir el proyecto, utiliza un `.env.example` que contenga únicamente marcadores ficticios.
 
