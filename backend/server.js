@@ -22,7 +22,9 @@ console.log(
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "http://localhost:5173"
+}));
 app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -2149,65 +2151,7 @@ app.post('/api/perfil/:id/foto',autenticarToken,(req, res) => {
   });
 });
 
-app.put(
-  "/api/usuarios/:id/password",
-  autenticarToken,
-  soloAdministrador,
-  async (req, res) => {
-    try {
-      const id = Number(req.params.id);
-      const { nuevaPassword } = req.body;
 
-      if (!Number.isInteger(id) || id <= 0) {
-        return res.status(400).json({
-          exito: false,
-          mensaje: "El ID del usuario no es válido."
-        });
-      }
-
-      if (
-        typeof nuevaPassword !== "string" ||
-        nuevaPassword.length < 8
-      ) {
-        return res.status(400).json({
-          exito: false,
-          mensaje: "La contraseña debe tener al menos 8 caracteres."
-        });
-      }
-
-      const resultado = await pool.query(
-        "SELECT id FROM usuarios WHERE id = $1",
-        [id]
-      );
-
-      if (resultado.rows.length === 0) {
-        return res.status(404).json({
-          exito: false,
-          mensaje: "El usuario no existe."
-        });
-      }
-
-      const passwordHash = await bcrypt.hash(nuevaPassword, 10);
-
-      await pool.query(
-        "UPDATE usuarios SET password_hash = $1 WHERE id = $2",
-        [passwordHash, id]
-      );
-
-      return res.status(200).json({
-        exito: true,
-        mensaje: "La contraseña se cambió correctamente."
-      });
-    } catch (error) {
-      console.error("Error al cambiar la contraseña del usuario:", error);
-
-      return res.status(500).json({
-        exito: false,
-        mensaje: "No se pudo cambiar la contraseña."
-      });
-    }
-  }
-);
 
 
 // =========================================================================
