@@ -91,17 +91,31 @@ Cambia `postgres` por tu usuario de PostgreSQL si es diferente. El esquema crea 
 Crea `backend/.env` en tu máquina. No subas este archivo a GitHub. Ejemplo de nombres y formato:
 
 ```dotenv
-PORT=5000
-
-DB_USER=tu_usuario_postgres
+# Base de datos PostgreSQL
+DB_USER=usuario_ejemplo
 DB_HOST=localhost
-DB_DATABASE=plataforma_bienestar
-DB_PASSWORD=tu_contrasena_postgres
+DB_DATABASE=plataforma_bienestar_ejemplo
+DB_PASSWORD=contraseña_ficticia_ejemplo
 DB_PORT=5432
 
-CLOUDFLARE_ACCOUNT_ID=tu_account_id
-CLOUDFLARE_API_TOKEN=REEMPLAZAR_CON_UN_TOKEN_NUEVO
+# Puerto de tu servidor Node.js
+PORT=5000
 
+# Cloudflare
+CLOUDFLARE_ACCOUNT_ID=ID_FICTICIO_DE_CLOUDFLARE
+CLOUDFLARE_API_TOKEN=TOKEN_FICTICIO_DE_CLOUDFLARE
+
+# Correo SMTP
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=aqui_va_el _puerto
+SMTP_USER=correo_ejemplo@gmail.com
+SMTP_PASS=contraseña_smtp_ficticia
+
+# Autenticación JWT
+JWT_SECRET=CAMBIAR_POR_UN_SECRETO_ALEATORIO_LARGO
+JWT_EXPIRES_IN=1h
+
+FRONTEND_URL=http://localhost:puerto_abil
 
 ```
 
