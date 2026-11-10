@@ -460,8 +460,8 @@ app.put(
 
 // 1. Obtener todas las encuestas, incluyendo la fecha límite.
 
-app.get('/api/encuestas', async (req, res) => {
-  const usuarioId = req.query.usuario_id;
+app.get('/api/encuestas', autenticarToken, async (req, res) => {
+  const usuarioId = req.usuario_id;
 
   try {
     const query = `
@@ -1014,7 +1014,7 @@ app.post('/api/propuestas', autenticarToken, async (req, res) => {
   }
 });
 
-app.get('/api/propuestas', async (req, res) => {
+app.get('/api/propuestas', soloAdministrador, autenticarToken, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT

@@ -51,7 +51,7 @@ function Encuestas({ usuario }) {
     setCargando(true);
 
     try {
-      const userId = usuarioActual?.id ? `?usuario_id=${usuarioActual.id}` : "";
+      const userId = usuarioActual?.id ? `${usuarioActual.id}` : "";
       const res = await apiFetch(`${API_URL}${userId}`);
       const data = await res.json();
 

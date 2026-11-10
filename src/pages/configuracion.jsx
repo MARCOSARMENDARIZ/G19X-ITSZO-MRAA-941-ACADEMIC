@@ -92,7 +92,7 @@ const cerrarModalAlerta = () => {
 
   const obtenerPropuestas = async () => {
     try {
-      const respuesta = await fetch(
+      const respuesta = await apiFetch(
         "http://localhost:5000/api/propuestas"
       );
 
