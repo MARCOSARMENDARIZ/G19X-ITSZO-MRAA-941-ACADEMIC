@@ -70,21 +70,41 @@ Los nombres de archivos pueden variar en mayúsculas/minúsculas según la versi
 
 ## 1. Crear la base de datos
 
-Desde `psql` o una herramienta como pgAdmin, crea una base de datos, por ejemplo:
+Desde `psql` o una herramienta como pgAdmin, crea la base de datos:
 
 ```sql
 CREATE DATABASE bienestar_ia;
 ```
 
-Después abre esa base de datos y ejecuta el archivo `backend/db/schema.sql`.
+## 2. Crear las tablas de la base de datos
 
-Con `psql`, desde la carpeta raíz del proyecto puedes usar:
+**Este paso debe ejecutarse primero**, ya que crea la estructura y las tablas que necesita la aplicación.
+
+Desde la carpeta raíz del proyecto, ejecuta:
 
 ```powershell
-psql -U postgres -d plataforma_bienestar -f backend/db/schema.sql
+psql -U postgres -d bienestar_ia -f backend/db/schema.sql
 ```
 
-Cambia `postgres` por tu usuario de PostgreSQL si es diferente. El esquema crea las tablas que utiliza el backend; no elimina ni modifica tablas existentes.
+El archivo `schema.sql` crea las tablas y relaciones de la base de datos. No contiene usuarios ni credenciales.
+
+## 3. Insertar los datos de prueba
+
+**Después de ejecutar correctamente `schema.sql`**, ejecuta el siguiente comando para insertar las cuentas de prueba y los datos iniciales:
+
+```powershell
+psql -U postgres -d bienestar_ia -f backend/db/datos_prueba.sql
+```
+
+Las siguientes cuentas son únicamente para pruebas y desarrollo. No deben utilizarse en producción.
+
+| Usuario | Contraseña | Rol |
+|---|---|---|
+| admini | Administrador123456 | Administrador (`admin`) |
+| paul | minecraft2435 | Usuario (`usuario`) |
+
+**Importante:** No ejecutes `datos_prueba.sql` antes de `schema.sql`, porque las tablas todavía no existirían. Las contraseñas deben estar almacenadas mediante hashes bcrypt para que funcionen con el inicio de sesión de la aplicación.
+
 
 ## 2. Configurar las variables de entorno
 
@@ -203,32 +223,7 @@ Todos los endpoints de API usan el prefijo `/api`.
 | `POST` | `/api/chatbot` | Enviar mensaje al chatbot. |
 | `POST` | `/api/analizar-viabilidad` | Analizar una propuesta con IA. |
 
-## Crear un usuario administrador de prueba
 
-El esquema no inserta una contraseña predeterminada. Crea un usuario desde la interfaz de administración si ya existe un administrador, o genera un hash con `bcryptjs` y registra el usuario en la base de datos.
-
-Ejemplo de generación de hash desde una terminal dentro de `backend`:
-
-```powershell
-node -e "const bcrypt=require('bcryptjs'); const readline=require('readline').createInterface({input:process.stdin,output:process.stdout}); readline.question('Contraseña temporal para el admin: ', async p => { console.log(await bcrypt.hash(p,10)); readline.close(); });"
-```
-
-Copia el hash generado y úsalo en una inserción SQL. No guardes la contraseña en texto plano:
-
-```sql
-INSERT INTO usuarios (nombre, email, password_hash, rol)
-VALUES ('Administrador de prueba', 'admin@ejemplo.local', 'PEGA_AQUI_EL_HASH_GENERADO', 'admin')
-RETURNING id;
-```
-
-Después crea el perfil usando el `id` devuelto:
-
-```sql||
-INSERT INTO perfiles (usuario_id, puesto, departamento, fecha_ingreso)
-VALUES (ID_DEVUELTO, 'Administrador', 'Administración', CURRENT_DATE);
-```
-
-Reemplaza `ID_DEVUELTO` por el número real. Utiliza una contraseña temporal y cámbiala antes de cualquier uso no local. No reutilices contraseñas personales.
 
 ## Seguridad: pendientes antes de producción
 

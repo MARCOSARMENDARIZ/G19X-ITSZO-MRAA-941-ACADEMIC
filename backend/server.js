@@ -1014,7 +1014,7 @@ app.post('/api/propuestas', autenticarToken, async (req, res) => {
   }
 });
 
-app.get('/api/propuestas', soloAdministrador, autenticarToken, async (req, res) => {
+app.get('/api/propuestas', autenticarToken, soloAdministrador, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT

@@ -51,8 +51,7 @@ function Encuestas({ usuario }) {
     setCargando(true);
 
     try {
-      const userId = usuarioActual?.id ? `${usuarioActual.id}` : "";
-      const res = await apiFetch(`${API_URL}${userId}`);
+      const res = await apiFetch(API_URL);
       const data = await res.json();
 
       if (!res.ok || !data.exito) {
@@ -611,7 +610,7 @@ function Encuestas({ usuario }) {
         <div className="modal-overlay">
           <div className="modal-contenido">
             <div className="modal-header">
-              <h2>➕ Crear Nueva Encuesta</h2>
+              <h2><i class="bi bi-plus-circle-fill" style={{color : '#1d4ed8'}}></i> Crear Nueva Encuesta</h2>
               <button
                 type="button"
                 className="btn-cerrar-modal"
@@ -646,7 +645,7 @@ function Encuestas({ usuario }) {
               </div>
 
               <div className="form-grupo">
-                <label>📅 Fecha y hora límite para responder</label>
+                <label> Fecha y hora límite para responder</label>
                 <input
                   type="datetime-local"
                   className="input-estilizado"
@@ -733,7 +732,7 @@ function Encuestas({ usuario }) {
                         style={{ marginTop: "6px", cursor: "pointer" }}
                         onClick={() => handleAgregarOpcion(pIdx)}
                       >
-                        ➕ Agregar Opción
+                        <i class="bi bi-plus-circle-fill"></i> Agregar Opción
                       </button>
                     </div>
                   )}
@@ -745,7 +744,7 @@ function Encuestas({ usuario }) {
                 className="btn-agregar-pregunta"
                 onClick={handleAgregarPregunta}
               >
-                ➕ Agregar otra pregunta
+                <i class="bi bi-plus-circle-fill"></i> Agregar otra pregunta
               </button>
 
               <div className="modal-acciones">
@@ -771,11 +770,11 @@ function Encuestas({ usuario }) {
       )}
 
       {/* MODAL PARA RESPONDER */}
-      {mostrarModalResponder && encuestaSeleccionada && (
-        <div className="modal-overlay">
-          <div className="modal-contenido">
+     {mostrarModalResponder && encuestaSeleccionada && (
+  <div className="modal-overlay">
+    <div className="modal-contenido modal-encuesta">
             <div className="modal-header">
-              <h2>✏️ {encuestaSeleccionada.titulo}</h2>
+              <h2> {encuestaSeleccionada.titulo}</h2>
               <button
                 type="button"
                 className="btn-cerrar-modal"
@@ -785,7 +784,7 @@ function Encuestas({ usuario }) {
               </button>
             </div>
 
-            <form className="modal-form" onSubmit={enviarRespuestas}>
+            <form className="modal-form modal-form-responder" onSubmit={enviarRespuestas}>
               <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
                 {encuestaSeleccionada.descripcion}
               </p>
@@ -796,7 +795,7 @@ function Encuestas({ usuario }) {
                     }`}
                 >
                   <span>
-                    {encuestaVencida(encuestaSeleccionada) ? "🔒" : "⏳"}
+                    {encuestaVencida(encuestaSeleccionada) ? "" : ""}
                   </span>
                   <div>
                     <strong>
@@ -814,7 +813,7 @@ function Encuestas({ usuario }) {
               )}
 
               {preguntasEncuesta.map((preg, idx) => (
-                <div key={preg.id} className="pregunta-box">
+                <div key={preg.id} className="pregunta-box pregunta-responder">
                   <label className="pregunta-titulo">
                     {idx + 1}. {preg.texto_pregunta}
                   </label>
@@ -838,7 +837,7 @@ function Encuestas({ usuario }) {
                             )
                           }
                         >
-                          {num} ⭐
+                          {num} <i class="bi bi-star-fill" style={{color: '#e8f543'}}></i>
                         </button>
                       ))}
                     </div>
@@ -924,8 +923,8 @@ function Encuestas({ usuario }) {
             <div className="modal-header">
               <h2>
                 {esAdmin
-                  ? `🤖 Análisis con IA: ${encuestaSeleccionada.titulo}`
-                  : `👤 Mi Resumen: ${encuestaSeleccionada.titulo}`}
+                  ? ` Análisis con IA: ${encuestaSeleccionada.titulo}`
+                  : ` Mi Resumen: ${encuestaSeleccionada.titulo}`}
               </h2>
 
               <button
@@ -948,7 +947,7 @@ function Encuestas({ usuario }) {
                   {cargandoAnalisis ? (
                     <div style={{ textAlign: "center", padding: "40px 20px" }}>
                       <p style={{ fontWeight: "bold", color: "#2563eb" }}>
-                        🤖 La IA está analizando las respuestas...
+                         La IA está analizando las respuestas...
                       </p>
                       <p style={{ color: "#6b7280" }}>
                         Sintetizando conclusiones y recomendaciones.
@@ -999,12 +998,12 @@ function Encuestas({ usuario }) {
                       </div>
 
                       <div>
-                        <h3>📝 Resumen Ejecutivo</h3>
+                        <h3> Resumen Ejecutivo</h3>
                         <p>{analisisIA.resumen_ejecutivo}</p>
                       </div>
 
                       <div>
-                        <h3>✅ Hallazgos Clave / Puntos Fuertes</h3>
+                        <h3> Hallazgos Clave / Puntos Fuertes</h3>
                         <ul>
                           {analisisIA.hallazgos_clave?.map((item, idx) => (
                             <li key={idx}>{item}</li>
