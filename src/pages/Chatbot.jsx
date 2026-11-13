@@ -4,7 +4,7 @@ import { apiFetch } from "../api";
 
 const MENSAJE_INICIAL = {
   remitente: "bot",
-  texto: "¡Hola! 👋 Soy tu asistente de Bienestar IA. ¿En qué te puedo ayudar hoy?"
+  texto: "¡Hola!  Soy tu asistente de Bienestar IA. ¿En qué te puedo ayudar hoy?"
 };
 
 const crearChat = () => ({

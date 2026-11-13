@@ -21,6 +21,19 @@ function Encuestas({ usuario }) {
   const [nuevaDescripcion, setNuevaDescripcion] = useState("");
   const [fechaCierre, setFechaCierre] = useState("");
 
+  const [mostrarModalAlerta, setMostrarModalAlerta] = useState(false);
+  const [mensajeAlerta, setMensajeAlerta] = useState("");
+
+  const mostrarAlerta = (mensaje) => {
+  setMensajeAlerta(mensaje);
+  setMostrarModalAlerta(true);
+};
+
+  const cerrarModalAlerta = () => {
+  setMostrarModalAlerta(false);
+  setMensajeAlerta("");
+};
+
   const [nuevasPreguntas, setNuevasPreguntas] = useState([
     { texto_pregunta: "", tipo_respuesta: "escala", opciones: ["", ""] }
   ]);
@@ -127,12 +140,12 @@ function Encuestas({ usuario }) {
   // Abrir el modal para responder.
   const abrirResponder = async (encuesta) => {
     if (encuestaVencida(encuesta)) {
-      alert("Esta encuesta ya venció y no admite nuevas respuestas.");
+      mostrarAlerta("Esta encuesta ya venció y no admite nuevas respuestas.");
       return;
     }
 
     if (encuesta.yaRespondida) {
-      alert("Ya has respondido esta encuesta anteriormente.");
+      mostrarAlerta("Ya has respondido esta encuesta anteriormente.");
       return;
     }
 
@@ -150,7 +163,7 @@ function Encuestas({ usuario }) {
       const encuestaCompleta = data.encuesta;
 
       if (encuestaVencida(encuestaCompleta)) {
-        alert("Esta encuesta ya venció.");
+        mostrarAlerta("Esta encuesta ya venció.");
         await cargarEncuestas();
         return;
       }
@@ -160,7 +173,7 @@ function Encuestas({ usuario }) {
       setMostrarModalResponder(true);
     } catch (error) {
       console.error("Error al cargar la encuesta:", error);
-      alert(error.message || "No se pudieron cargar las preguntas.");
+      mostrarAlerta(error.message || "No se pudieron cargar las preguntas.");
     }
   };
 
@@ -224,7 +237,7 @@ function Encuestas({ usuario }) {
     if (enviandoRespuestas) return;
 
     if (encuestaVencida(encuestaSeleccionada)) {
-      alert("El tiempo para responder esta encuesta ha terminado.");
+      mostrarAlerta("El tiempo para responder esta encuesta ha terminado.");
       setMostrarModalResponder(false);
       cargarEncuestas();
       return;
@@ -247,14 +260,14 @@ function Encuestas({ usuario }) {
     });
 
     if (preguntasObligatorias.length > 0) {
-      alert("Por favor, responde todas las preguntas antes de enviar.");
+      mostrarAlerta("Por favor, responde todas las preguntas antes de enviar.");
       return;
     }
 
     const payloadRespuestas = Object.values(respuestasForm);
 
     if (payloadRespuestas.length === 0) {
-      alert("Debes responder las preguntas antes de enviar.");
+      mostrarAlerta("Debes responder las preguntas antes de enviar.");
       return;
     }
 
@@ -275,32 +288,32 @@ function Encuestas({ usuario }) {
       const data = await res.json();
 
       if (res.status === 409) {
-        alert(data.mensaje || "Ya has respondido esta encuesta anteriormente.");
+        mostrarAlerta(data.mensaje || "Ya has respondido esta encuesta anteriormente.");
         setMostrarModalResponder(false);
         await cargarEncuestas();
         return;
       }
 
       if (res.status === 403 && data.vencida) {
-        alert("La encuesta venció. Ya no se pueden enviar respuestas.");
+        mostrarAlerta("La encuesta venció. Ya no se pueden enviar respuestas.");
         setMostrarModalResponder(false);
         await cargarEncuestas();
         return;
       }
 
       if (!res.ok || !data.exito) {
-        alert(data.mensaje || "Error al enviar las respuestas.");
+        mostrarAlerta(data.mensaje || "Error al enviar las respuestas.");
         return;
       }
 
-      alert("¡Respuestas enviadas con éxito!");
+      mostrarAlerta("¡Respuestas enviadas con éxito!");
 
       setMostrarModalResponder(false);
       setRespuestasForm({});
       await cargarEncuestas();
     } catch (error) {
       console.error("Error al enviar respuestas:", error);
-      alert("No se pudieron enviar las respuestas. Intenta nuevamente.");
+      mostrarAlerta("No se pudieron enviar las respuestas. Intenta nuevamente.");
     } finally {
       setEnviandoRespuestas(false);
     }
@@ -354,14 +367,14 @@ function Encuestas({ usuario }) {
     if (guardandoEncuesta) return;
 
     if (!nuevoTitulo.trim()) {
-      alert("El título de la encuesta es obligatorio.");
+      mostrarAlerta("El título de la encuesta es obligatorio.");
       return;
     }
 
     if (
       nuevasPreguntas.some((pregunta) => !pregunta.texto_pregunta.trim())
     ) {
-      alert("Todas las preguntas deben tener un texto.");
+      mostrarAlerta("Todas las preguntas deben tener un texto.");
       return;
     }
 
@@ -372,7 +385,7 @@ function Encuestas({ usuario }) {
         );
 
         if (opcionesValidas.length < 2) {
-          alert("Cada pregunta de opción múltiple debe tener al menos dos opciones.");
+          mostrarAlerta("Cada pregunta de opción múltiple debe tener al menos dos opciones.");
           return;
         }
       }
@@ -387,7 +400,7 @@ function Encuestas({ usuario }) {
         Number.isNaN(fecha.getTime()) ||
         fecha.getTime() <= Date.now()
       ) {
-        alert("Selecciona una fecha y hora de cierre futuras.");
+        mostrarAlerta("Selecciona una fecha y hora de cierre futuras.");
         return;
       }
 
@@ -421,11 +434,11 @@ function Encuestas({ usuario }) {
       const data = await res.json();
 
       if (!res.ok || !data.exito) {
-        alert(data.mensaje || "Error al crear la encuesta.");
+        mostrarAlerta(data.mensaje || "Error al crear la encuesta.");
         return;
       }
 
-      alert("¡Encuesta publicada correctamente!");
+      mostrarAlerta("¡Encuesta publicada correctamente!");
 
       setMostrarModalCrear(false);
       setNuevoTitulo("");
@@ -438,7 +451,7 @@ function Encuestas({ usuario }) {
       await cargarEncuestas();
     } catch (error) {
       console.error("Error al guardar encuesta:", error);
-      alert("No se pudo crear la encuesta.");
+      mostrarAlerta("No se pudo crear la encuesta.");
     } finally {
       setGuardandoEncuesta(false);
     }
@@ -1024,6 +1037,30 @@ function Encuestas({ usuario }) {
           </div>
         </div>
       )}
+      {mostrarModalAlerta && (
+  <div className="alerta-overlay">
+    <div
+      className="alerta-contenido"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="titulo-alerta"
+    >
+      <div className="alerta-icono">!</div>
+
+      <h2 id="titulo-alerta">Aviso</h2>
+
+      <p>{mensajeAlerta}</p>
+
+      <button
+        type="button"
+        onClick={cerrarModalAlerta}
+        autoFocus
+      >
+        Entendido
+      </button>
+    </div>
+  </div>
+)}
     </div>
   );
 }

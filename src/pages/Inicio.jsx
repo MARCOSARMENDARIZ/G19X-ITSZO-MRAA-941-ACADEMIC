@@ -85,7 +85,7 @@ function Inicio() {
     <div className="inicio-container">
       <aside className="sidebar">
         <div className="sidebar-logo">
-          <h2>Bienestar IA</h2>
+          <h2>Bienestar Lab</h2>
         </div>
 
         <nav className="sidebar-menu">

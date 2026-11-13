@@ -9,6 +9,19 @@ function Bienestar() {
   const [enviando, setEnviando] = useState(false);
   const [misPropuestas, setMisPropuestas] = useState([]);
 
+  const [mostrarModalAlerta, setMostrarModalAlerta] = useState(false);
+  const [mensajeAlerta, setMensajeAlerta] = useState("");
+
+  const mostrarAlerta = (mensaje) => {
+    setMensajeAlerta(mensaje);
+    setMostrarModalAlerta(true);
+  };
+
+  const cerrarModalAlerta = () => {
+    setMostrarModalAlerta(false);
+    setMensajeAlerta("");
+  };
+
   useEffect(() => {
     const usuarioGuardado = localStorage.getItem("usuario");
     if (usuarioGuardado) {
@@ -20,7 +33,7 @@ function Bienestar() {
     e.preventDefault();
 
     if (!titulo.trim() || !descripcion.trim()) {
-      alert("Por favor completa todos los campos.");
+      mostrarAlerta("Por favor completa todos los campos.");
       return;
     }
 
@@ -39,7 +52,7 @@ function Bienestar() {
       const data = await respuesta.json();
 
       if (respuesta.ok && data.exito) {
-        alert("¡Propuesta enviada correctamente!");
+        mostrarAlerta("¡Propuesta enviada correctamente!");
 
         if (data.propuesta) {
           setMisPropuestas((prev) => [data.propuesta, ...prev]);
@@ -48,11 +61,11 @@ function Bienestar() {
         setTitulo("");
         setDescripcion("");
       } else {
-        alert(data.mensaje || "Error al enviar la propuesta.");
+        mostrarAlerta(data.mensaje || "Error al enviar la propuesta.");
       }
     } catch (error) {
       console.error("Error al enviar propuesta:", error);
-      alert("No se pudo conectar con el servidor.");
+      mostrarAlerta("No se pudo conectar con el servidor.");
     } finally {
       setEnviando(false);
     }
@@ -133,6 +146,30 @@ function Bienestar() {
               ))}
             </ul>
           </section>
+        )}
+        {mostrarModalAlerta && (
+          <div className="alerta-overlay">
+            <div
+              className="alerta-contenido"
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="titulo-alerta"
+            >
+              <div className="alerta-icono">!</div>
+
+              <h2 id="titulo-alerta">Aviso</h2>
+
+              <p>{mensajeAlerta}</p>
+
+              <button
+                type="button"
+                onClick={cerrarModalAlerta}
+                autoFocus
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
         )}
       </main>
     </div>
