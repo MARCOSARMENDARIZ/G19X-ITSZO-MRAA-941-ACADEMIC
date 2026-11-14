@@ -21,6 +21,18 @@ La aplicación integra las funcionalidades contempladas en el MVP y está prepar
 - Análisis orientativo de viabilidad de propuestas mediante IA.
 - Chatbot enfocado en bienestar organizacional.
 
+## Metodología de desarrollo
+
+El desarrollo de Plataforma Bienestar IA se realizó mediante un trabajo mixto que combinó programación propia y el apoyo de herramientas de inteligencia artificial.
+
+La implementación del proyecto incluyó actividades realizadas directamente por el desarrollador, como la creación y modificación de código, diseño de interfaces, configuración del backend, conexión con PostgreSQL, implementación de funcionalidades, integración de servicios y corrección de errores.
+
+Asimismo, se utilizaron herramientas de inteligencia artificial como apoyo durante el proceso de desarrollo para consultar soluciones, analizar errores, generar sugerencias, mejorar fragmentos de código, resolver problemas técnicos y orientar la documentación.
+
+Las propuestas generadas mediante inteligencia artificial fueron revisadas, adaptadas e integradas al proyecto según las necesidades de la aplicación.
+
+Por lo tanto, el resultado es producto de la colaboración entre el trabajo técnico del desarrollador y el uso de herramientas de inteligencia artificial como recurso de apoyo.
+
 ## Tecnologías
 
 - Frontend: React, React Router, Vite, Bootstrap y Bootstrap Icons.
