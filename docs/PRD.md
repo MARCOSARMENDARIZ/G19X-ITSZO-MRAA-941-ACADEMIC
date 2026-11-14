@@ -212,7 +212,7 @@ El código utiliza las entidades de datos siguientes, entre otras:
 - `propuestas`: ideas de mejora.
 - `recuperacion_password`: códigos y metadatos del proceso de recuperación.
 
-La estructura exacta y las restricciones de la base deben mantenerse sincronizadas con las consultas de `backend/server.js`. En la copia revisada no se encontró el archivo `backend/db/schema.sql`, por lo que no se debe asumir que existe un esquema reproducible y completo hasta crearlo y probarlo.
+La estructura de la base de datos se encuentra definida en `backend/db/schema.sql`. Para preparar una base de datos nueva, ejecuta primero este archivo y posteriormente `backend/db/datos_prueba.sql` si deseas cargar los registros de prueba.
 
 ## 11. Fuera del alcance de esta versión
 
@@ -223,19 +223,9 @@ La estructura exacta y las restricciones de la base deben mantenerse sincronizad
 - Aplicaciones móviles nativas.
 - Analítica avanzada o predicciones basadas en modelos entrenados con datos propios.
 
-## 12. Riesgos y pendientes conocidos
 
-1. Probar todas las rutas protegidas y confirmar que cada una aplica autenticación y autorización apropiadas.
-2. Verificar que los endpoints de lectura de encuestas y propuestas solo expongan la información permitida.
-3. Revisar el uso de `usuario_id` recibido desde el cliente y derivar la identidad desde el JWT siempre que corresponda.
-4. Asegurar que el cambio de contraseña solo sea posible tras una verificación vigente y de un solo uso.
-5. Validar la carga de archivos, el tamaño máximo y el acceso a las imágenes.
-6. Sustituir CORS abierto por una lista de orígenes permitidos en producción.
-7. Añadir pruebas automatizadas de autenticación, roles, encuestas, propuestas y recuperación de contraseña.
-8. Crear y validar `backend/db/schema.sql` a partir de las consultas reales.
-9. No publicar credenciales reales; revocar y reemplazar cualquier secreto que haya sido expuesto.
 
-## 13. Métricas de éxito
+## 12. Métricas de éxito
 
 - Los usuarios pueden iniciar y cerrar sesión correctamente.
 - Los usuarios autorizados pueden completar una encuesta válida.

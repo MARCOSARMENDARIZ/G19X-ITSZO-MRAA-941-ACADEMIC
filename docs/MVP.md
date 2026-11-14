@@ -9,8 +9,7 @@
 
 El Producto Mínimo Viable (MVP) reúne las funciones indispensables para que una organización de prueba pueda iniciar sesión, consultar información básica, responder encuestas, registrar propuestas de mejora y utilizar un chatbot de bienestar. Incluye funciones administrativas para gestionar usuarios y encuestas.
 
-El MVP es una versión de desarrollo académico. Antes de usarlo con datos reales o publicarlo, se deben cerrar los pendientes de seguridad y validar las funciones con pruebas.
-
+El MVP es una versión funcional de desarrollo académico que integra las funciones principales de la Plataforma Bienestar IA, incluyendo autenticación, administración de usuarios, gestión de encuestas, propuestas de mejora, chatbot y controles de seguridad.
 ## 2. Usuarios del MVP
 
 - **Usuario:** consulta su perfil, participa en encuestas, envía propuestas y usa el chatbot.
@@ -166,8 +165,7 @@ npm install
 Crear `backend/.env` localmente usando `backend/.env.example` como guía. Reemplazar todos los marcadores con valores válidos. No pegar credenciales en documentación o conversaciones.
 
 ### 6.4 Preparar PostgreSQL
-
-Crear la base de datos de desarrollo y ejecutar el esquema SQL validado del proyecto. En la copia examinada no estaba incluido `backend/db/schema.sql`, por lo que este paso debe completarse antes de considerar reproducible la instalación.
+Crear la base de datos de desarrollo y ejecutar primero el archivo backend/db/schema.sql para crear las tablas, relaciones e índices del sistema. Posteriormente, ejecutar backend/db/datos_prueba.sql para insertar las cuentas y los registros de prueba.
 
 ### 6.5 Iniciar el backend
 
@@ -210,23 +208,29 @@ Abrir la dirección local que muestre Vite.
 | T-15 | Subir una imagen no permitida | La carga es rechazada | Media |
 | T-16 | Revisar repositorio antes de publicar | No contiene `.env`, tokens ni contraseñas | Alta |
 
-## 8. Riesgos y condiciones para considerar listo el MVP
+## 8. Seguridad implementada y estado del MVP
 
-El MVP no debe considerarse listo para producción hasta que se cumpla lo siguiente:
+La Plataforma Bienestar IA cuenta con las siguientes medidas de seguridad implementadas:
 
-1. Revisar que todas las rutas privadas tengan `autenticarToken`.
-2. Revisar que todas las operaciones administrativas tengan `soloAdministrador`.
-3. Verificar que el identificador de usuario se obtenga del JWT cuando la operación corresponda a la sesión actual.
-4. Probar los permisos de lectura de encuestas y propuestas.
-5. Validar recuperación de contraseña, expiración y uso único del código.
-6. Restringir CORS y validar límites de tamaño y tipo en archivos.
-7. Añadir o completar pruebas automatizadas.
-8. Crear y probar `backend/db/schema.sql` en una base limpia.
-9. Revocar cualquier credencial expuesta y comprobar que la nueva configuración funciona.
-10. Retirar `.env`, `.git`, `node_modules` y archivos de carga del material de entrega cuando no sean necesarios.
+1. **Autenticación mediante JWT:** permite validar la identidad de los usuarios y proteger las rutas privadas.
+2. **Control de acceso por roles:** restringe las operaciones administrativas a los usuarios autorizados.
+3. **Protección de datos de usuario:** las operaciones relacionadas con la sesión utilizan la identidad obtenida del token.
+4. **Contraseñas protegidas:** se almacenan mediante funciones de hash.
+5. **Recuperación de contraseña:** utiliza códigos de verificación enviados por correo electrónico, con control de vigencia y validación.
+6. **Configuración de CORS:** restringe las solicitudes a los orígenes permitidos.
+7. **Protección de credenciales:** las variables de entorno se mantienen fuera del repositorio.
+8. **Validación de archivos:** se aplican controles para la carga de fotografías de perfil.
+
+La estructura de PostgreSQL se encuentra definida en `backend/db/schema.sql` y los registros de prueba en `backend/db/datos_prueba.sql`.
+
+El proyecto integra las funcionalidades contempladas en el MVP y está preparado para su demostración académica.
 
 ## 9. Criterio final de aceptación
 
-El MVP se acepta para una demostración académica cuando un usuario puede iniciar sesión, consultar su perfil, participar en una encuesta vigente, enviar una propuesta y utilizar el chatbot; y cuando un administrador puede gestionar usuarios y crear encuestas. Las pruebas de acceso no autorizado deben pasar y la instalación debe documentarse sin exponer credenciales.
+La Plataforma Bienestar IA cumple con el alcance establecido para el MVP cuando permite que los usuarios inicien sesión, consulten su perfil, participen en encuestas, envíen propuestas de mejora y utilicen el chatbot de bienestar.
 
-Las funciones de IA dependen de la disponibilidad y configuración de Cloudflare Workers AI. El proyecto debe indicar claramente cualquier función que aún no se haya probado.
+Asimismo, permite que los administradores gestionen usuarios, creen encuestas y consulten los análisis correspondientes.
+
+El sistema incorpora autenticación mediante JWT, control de acceso por roles, protección de contraseñas, recuperación mediante códigos de verificación y configuración de CORS.
+
+La instalación y configuración se encuentran documentadas mediante los archivos de configuración y scripts SQL del proyecto.
