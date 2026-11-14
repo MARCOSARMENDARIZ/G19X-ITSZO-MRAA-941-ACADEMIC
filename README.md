@@ -4,7 +4,9 @@ Aplicación web académica para apoyar el bienestar organizacional mediante encu
 
 ## Estado del proyecto
 
-Este README describe la estructura y los endpoints presentes en el repositorio al momento de su revisión. No significa que todas las funciones estén listas para producción. En particular, antes de desplegar en un entorno real deben reforzarse la autenticación, la autorización de rutas y la recuperación de contraseñas.
+Este README describe la estructura, funcionalidades y endpoints de la Plataforma Bienestar IA. El proyecto cuenta con autenticación mediante JWT, autorización por roles, recuperación de contraseña mediante códigos de verificación, protección de rutas y configuración de CORS.
+
+La aplicación integra las funcionalidades contempladas en el MVP y está preparada para su demostración académica.
 
 ## Funcionalidades identificadas
 
@@ -30,34 +32,26 @@ Este README describe la estructura y los endpoints presentes en el repositorio a
 
 ## Estructura principal
 
-```text
 Plataforma-bienestar/
 ├── backend/
 │   ├── db/
-│   │   └── schema.sql
+│   │   ├── schema.sql
+│   │   └── datos_prueba.sql
 │   ├── server.js
 │   ├── package.json
-│   └── .env.example
-    └── .env                # local; no subir a Git
+│   ├── .env.example
+│   └── .env
 ├── docs/
 │   ├── PRD.md
 │   └── MVP.md
 ├── public/
 ├── src/
 │   ├── pages/
-│   │   ├── Login.jsx
-│   │   ├── Inicio.jsx
-│   │   ├── Perfil.jsx
-│   │   ├── configuracion.jsx
-│   │   ├── Evaluaciones.jsx
-│   │   ├── Bienestar.jsx
-│   │   └── Chatbot.jsx
 │   ├── App.jsx
 │   └── ...
 ├── .gitignore
 ├── package.json
 └── README.md
-```
 
 Los nombres de archivos pueden variar en mayúsculas/minúsculas según la versión local. En el repositorio revisado, `src/App.jsx` registra las rutas `/`, `/inicio`, `/perfil`, `/configuracion`, `/evaluaciones`, `/bienestar` y `/chat`.
 
@@ -204,40 +198,42 @@ Vite mostrará la dirección local del frontend, normalmente `http://localhost:5
 
 Todos los endpoints de API usan el prefijo `/api`.
 
-| Método | Ruta | Propósito |
-|---|---|---|
-| `POST` | `/api/login` | Validar credenciales e iniciar sesión. |
-| `GET` | `/api/perfil/:id` | Obtener el perfil de un usuario. |
-| `GET` | `/api/usuarios` | Consultar usuarios. |
-| `POST` | `/api/usuarios/registrar` | Registrar usuario y perfil. |
-| `DELETE` | `/api/usuarios/:id` | Eliminar un usuario. |
-| `POST` | `/api/verificar-email` | Comprobar si existe un correo. |
-| `POST` | `/api/cambiar-password-directo` | Cambiar contraseña; requiere endurecimiento antes de producción. |
-| `GET` | `/api/encuestas` | Listar encuestas y contadores. |
-| `GET` | `/api/encuestas/:id` | Consultar encuesta, preguntas y opciones. |
-| `POST` | `/api/encuestas` | Crear encuesta y preguntas. |
-| `POST` | `/api/encuestas/:id/respuestas` | Guardar respuestas. |
-| `GET` | `/api/encuestas/:id/analizar-ia` | Generar análisis de los resultados. |
-| `POST` | `/api/propuestas` | Registrar una propuesta. |
-| `GET` | `/api/propuestas` | Consultar propuestas. |
-| `POST` | `/api/chatbot` | Enviar mensaje al chatbot. |
-| `POST` | `/api/analizar-viabilidad` | Analizar una propuesta con IA. |
+| Método | Ruta | Propósito | ¿Pide sesión? |
+|---|---|---|---|
+| `POST` | `/api/login` | Iniciar sesión. | No |
+| `POST` | `/api/verificar-email` | Comprobar si existe un correo. | No |
+| `POST` | `/api/verificar-codigo` | Validar código de recuperación. | No |
+| `GET` | `/api/perfil/:id` | Consultar perfil. | Sí |
+| `POST` | `/api/perfil/:id/foto` | Cargar fotografía. | Sí |
+| `GET` | `/api/tablero` | Consultar indicadores. | Sí |
+| `GET` | `/api/usuarios` | Consultar usuarios. | Sí, administrador |
+| `POST` | `/api/usuarios/registrar` | Registrar usuario. | Sí, administrador |
+| `DELETE` | `/api/usuarios/:id` | Eliminar usuario. | Sí, administrador |
+| `PUT` | `/api/usuarios/:id/password` | Cambiar contraseña. | Sí, administrador |
+| `GET` | `/api/encuestas` | Listar encuestas. | Sí |
+| `GET` | `/api/encuestas/:id` | Consultar encuesta. | Sí |
+| `POST` | `/api/encuestas` | Crear encuesta. | Sí, administrador |
+| `POST` | `/api/encuestas/:id/respuestas` | Guardar respuestas. | Sí |
+| `POST` | `/api/encuestas/:id/analizar-ia` | Analizar resultados. | Sí, administrador |
+| `POST` | `/api/propuestas` | Registrar propuesta. | Sí |
+| `GET` | `/api/propuestas` | Consultar propuestas. | Sí |
+| `POST` | `/api/chatbot` | Enviar mensaje al chatbot. | Sí |
+| `POST` | `/api/analizar-viabilidad` | Analizar propuesta con IA. | Sí |
 
 
 
-## Seguridad: pendientes antes de producción
+## Seguridad implementada
 
-La revisión del código actual identifica trabajo pendiente:
+La Plataforma Bienestar IA cuenta con las siguientes medidas de seguridad:
 
-1. Añadir autenticación basada en token y middleware en las rutas protegidas.
-2. Comprobar el rol `admin` en el backend; ocultar una opción en React no protege una API.
-3. Sustituir el cambio directo de contraseña por un flujo con contraseña actual o un código de recuperación verificable.
-4. No confiar en `usuario_id` o `rol` enviados por el navegador como prueba de identidad.
-5. Configurar CORS para los orígenes autorizados y validar las entradas.
-6. No registrar tokens, contraseñas ni otros secretos en consola.
-7. Revocar cualquier token expuesto y actualizar los secretos locales.
-8. Revisar las dependencias y probar el esquema en una base de datos de desarrollo antes de usarlo con datos existentes.
-
+1. Autenticación mediante JWT.
+2. Autorización de operaciones administrativas mediante roles.
+3. Protección de contraseñas mediante bcrypt.
+4. Recuperación de contraseña mediante códigos de verificación.
+5. Validación de identidad mediante el token de sesión.
+6. Configuración de CORS con orígenes permitidos.
+7. Protección de variables de entorno y credenciales.
+8. Validación de archivos para fotografías de perfil.
 
 ## Licencia
 
